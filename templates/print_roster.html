@@ -1,0 +1,161 @@
+
+{% extends "base.html" %}
+
+{% block title %}Δυναμολόγιο - {{ roster_date.strftime('%d/%m/%Y') }}{% endblock %}
+
+{% block extra_head %}
+{% if print_mode %}
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        .container-fluid { margin: 0; padding: 0; }
+        .card { border: none; box-shadow: none; }
+        .card-header { background: none !important; }
+        body { font-size: 12px; }
+        h1, h2, h3, h4, h5 { color: black !important; }
+        .table th { background-color: #f8f9fa !important; }
+        .badge { border: 1px solid #000; }
+        .table td, .table th { padding: 0.3rem !important; }
+    }
+    
+    @page {
+        size: A4;
+        margin: 1cm;
+    }
+}
+</style>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="no-print d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-users me-2"></i>
+        Δυναμολόγιο
+    </h1>
+    <div>
+        <input type="date" class="form-control d-inline-block" id="roster_date" 
+               value="{{ roster_date.strftime('%Y-%m-%d') }}" 
+               onchange="changeRosterDate(this.value)" style="width: auto;">
+        <button type="button" class="btn btn-primary ms-2" onclick="printRoster()">
+            <i class="fas fa-print me-1"></i>Εκτύπωση
+        </button>
+        <a href="{{ url_for('prints') }}" class="btn btn-secondary ms-2">
+            <i class="fas fa-arrow-left me-1"></i>Πίσω
+        </a>
+    </div>
+</div>
+
+<!-- Roster Header -->
+<div class="card">
+    <div class="card-header text-center">
+        <h2 class="mb-0">ΔΥΝΑΜΟΛΟΓΙΟ</h2>
+        <h4 class="text-muted">{{ roster_date.strftime('%A, %d %B %Y') }}</h4>
+    </div>
+    
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered roster-table">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 5%;">Α/Α</th>
+                        <th style="width: 25%;">Όνομα</th>
+                        <th style="width: 15%;">Στρ. Αριθμός</th>
+                        <th style="width: 20%;">Υπηρεσία</th>
+                        <th style="width: 15%;">Κατάσταση</th>
+                        <th style="width: 20%;">Παρατηρήσεις</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for soldier in soldiers %}
+                    <tr>
+                        <td class="text-center">{{ loop.index }}</td>
+                        <td><strong>{{ soldier.name }}</strong></td>
+                        <td class="text-center">{{ soldier.military_id }}</td>
+                        <td>
+                            {% if soldier.id in soldier_duties %}
+                                {% for duty in soldier_duties[soldier.id] %}
+                                    <span class="badge bg-primary">{{ duty.duty_name }}</span>
+                                    {% if duty.shift > 1 %}
+                                        <small>({{ duty.shift }}ο ΝΟΥΜΕΡΟ)</small>
+                                    {% endif %}
+                                    {% if not loop.last %}<br>{% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted">Διαθέσιμος</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if soldier.status == 'Active' %}
+                                <span class="badge bg-success">Ενεργός</span>
+                            {% else %}
+                                <span class="badge bg-warning">{{ soldier.status }}</span>
+                            {% endif %}
+                            {% if soldier.days_out_of_service > 0 %}
+                                <br><small class="text-danger">ΕΥ: {{ soldier.days_out_of_service }} μέρες</small>
+                            {% endif %}
+                        </td>
+                        <td class="small">
+                            {% if soldier.exemption_no_duty %}
+                                <span class="badge bg-danger">Άνευ Υπηρεσίας</span><br>
+                            {% endif %}
+                            {% if soldier.medical_category %}
+                                {{ soldier.medical_category }}
+                            {% endif %}
+                            {% if soldier.exemption_no_shaving %}
+                                <br><small>Άνευ Ξυρίσματος</small>
+                            {% endif %}
+                            {% if soldier.exemption_no_boots %}
+                                <br><small>Άνευ Αρβυλών</small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Summary -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <h5>Στατιστικά:</h5>
+                <ul class="list-unstyled">
+                    <li><strong>Σύνολο Στρατιωτών:</strong> {{ soldiers|length }}</li>
+                    <li><strong>Ενεργοί:</strong> {{ soldiers|selectattr('status', 'equalto', 'Active')|list|length }}</li>
+                    <li><strong>Σε Υπηρεσία:</strong> {{ soldier_duties|length }}</li>
+                    <li><strong>Διαθέσιμοι:</strong> {{ soldiers|length - soldier_duties|length }}</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h5>Υπογραφές:</h5>
+                <div class="signature-section">
+                    <p class="mb-1"><strong>Αξιωματικός Υπηρεσίας:</strong></p>
+                    <p class="signature-line">_________________________</p>
+                    <p class="text-muted">Ημερομηνία: {{ roster_date.strftime('%d/%m/%Y') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function changeRosterDate(newDate) {
+    window.location.href = '{{ url_for("print_roster") }}?date=' + newDate;
+}
+
+function printRoster() {
+    window.open('{{ url_for("print_roster", date=roster_date.strftime("%Y-%m-%d")) }}?print=true', '_blank');
+}
+
+// Auto-print if in print mode
+{% if print_mode %}
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        window.print();
+    }, 1000);
+});
+{% endif %}
+</script>
+{% endblock %}

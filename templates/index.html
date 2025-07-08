@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}Αρχική - Στρατιωτική Εφαρμογή{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1 class="mb-4">
+        <i class="fas fa-tachometer-alt me-2"></i>
+        Πίνακας Ελέγχου
+    </h1>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card stat-soldiers">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Σύνολο Στρατιωτών</h5>
+                        <h2 class="mb-0">{{ stats.total_soldiers }}</h2>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card stat-active">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Ενεργοί</h5>
+                        <h2 class="mb-0">{{ stats.active_soldiers }}</h2>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card stat-leave">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Εκτός Υπηρεσίας</h5>
+                        <h2 class="mb-0">{{ stats.soldiers_on_leave }}</h2>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-user-times"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card stat-duties">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Τύποι Υπηρεσιών</h5>
+                        <h2 class="mb-0">{{ stats.total_duty_types }}</h2>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Today's Duties -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-calendar-day me-2"></i>
+                    Υπηρεσίες Σήμερα - {{ today.strftime('%d/%m/%Y') }}
+                </h4>
+                <div>
+                    <a href="{{ url_for('schedule') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-edit me-1"></i>Διαχείριση Προγράμματος
+                    </a>
+                    <a href="{{ url_for('duty_sheet') }}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-print me-1"></i>Εκτύπωση
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if today_duties %}
+                    <div class="table-responsive">
+                        <table class="table table-hover duty-table">
+                            <thead>
+                                <tr>
+                                    <th>Υπηρεσία</th>
+                                    <th>ΝΟΥΜΕΡΟ</th>
+                                    <th>Στρατιώτης</th>
+                                    <th>Στρατιωτικός Αριθμός</th>
+                                    <th>Θέση</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assignment, soldier, duty_type in today_duties %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ duty_type.name }}</strong>
+                                        {% if duty_type.description %}
+                                            <br><small class="text-muted">{{ duty_type.description }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">Βάρδια {{ assignment.shift_number }}</span>
+                                    </td>
+                                    <td>{{ soldier.name }}</td>
+                                    <td>{{ soldier.military_id }}</td>
+                                    <td>{{ assignment.position_in_team }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <div class="text-center py-5">
+                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Δεν υπάρχουν υπηρεσίες για σήμερα</h5>
+                            <p class="text-muted">Χρησιμοποιήστε τον προγραμματιστή για να δημιουργήσετε το πρόγραμμα.</p>
+                            <a href="{{ url_for('schedule') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>Δημιουργία Προγράμματος
+                            </a>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    Γρήγορες Ενέργειες
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('add_soldier') }}" class="btn btn-outline-primary w-100 h-100 d-flex flex-column justify-content-center">
+                            <i class="fas fa-user-plus fa-2x mb-2"></i>
+                            <span>Προσθήκη Στρατιώτη</span>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('duties') }}" class="btn btn-outline-secondary w-100 h-100 d-flex flex-column justify-content-center">
+                            <i class="fas fa-clipboard-list fa-2x mb-2"></i>
+                            <span>Διαχείριση Υπηρεσιών</span>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <button onclick="generateTodaySchedule()" class="btn btn-outline-success w-100 h-100 d-flex flex-column justify-content-center">
+                            <i class="fas fa-magic fa-2x mb-2"></i>
+                            <span>Αυτόματο Πρόγραμμα</span>
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('duty_sheet') }}" class="btn btn-outline-info w-100 h-100 d-flex flex-column justify-content-center">
+                            <i class="fas fa-file-pdf fa-2x mb-2"></i>
+                            <span>Φύλλο Υπηρεσίας</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3 mb-4">
+        <div class="stat-card bg-info">
+            <div class="stat-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.total_duty_types }}</h3>
+                <p>Τύποι Υπηρεσιών</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Statistics Row -->
+    <div class="col-md-3 mb-4">
+        <div class="stat-card bg-secondary">
+            <div class="stat-icon">
+                <i class="fas fa-tools"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.assigned_equipment }}/{{ stats.total_equipment }}</h3>
+                <p>Εξοπλισμός Ανατεθιμένος</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="stat-card bg-purple">
+            <div class="stat-icon">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.active_leaves_today }}</h3>
+                <p>Σε Άδεια Σήμερα</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="stat-card bg-warning">
+            <div class="stat-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.pending_leaves }}</h3>
+                <p>Άδειες Εκκρεμείς</p>
+            </div>
+        </div>
+    </div>
+
+    {% if stats.active_alerts > 0 %}
+    <div class="col-md-3 mb-4">
+        <div class="stat-card bg-danger">
+            <div class="stat-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stats.active_alerts }}</h3>
+                <p>Ειδοποιήσεις Στελέχωσης</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function generateTodaySchedule() {
+    if (confirm('Θέλετε να δημιουργήσετε αυτόματα το πρόγραμμα για σήμερα;')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("generate_schedule") }}';
+
+        const dateInput = document.createElement('input');
+        dateInput.type = 'hidden';
+        dateInput.name = 'date';
+        dateInput.value = '{{ today.strftime("%Y-%m-%d") }}';
+
+        form.appendChild(dateInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

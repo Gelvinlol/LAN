@@ -1,0 +1,174 @@
+
+{% extends "base.html" %}
+
+{% block title %}Προσαρμοσμένη Εκτύπωση{% endblock %}
+
+{% block extra_head %}
+{% if print_mode %}
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        .container-fluid { margin: 0; padding: 0; }
+        .card { border: none; box-shadow: none; }
+        .card-header { background: none !important; }
+        body { font-size: 12px; }
+        h1, h2, h3, h4, h5 { color: black !important; }
+        .table th { background-color: #f8f9fa !important; }
+        .table td, .table th { padding: 0.3rem !important; }
+    }
+    
+    @page {
+        size: A4;
+        margin: 1cm;
+    }
+}
+</style>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="no-print d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-cog me-2"></i>
+        Προσαρμοσμένη Εκτύπωση
+    </h1>
+    <div>
+        <button type="button" class="btn btn-primary" onclick="printCustom()">
+            <i class="fas fa-print me-1"></i>Εκτύπωση
+        </button>
+        <a href="{{ url_for('prints') }}" class="btn btn-secondary ms-2">
+            <i class="fas fa-arrow-left me-1"></i>Πίσω
+        </a>
+    </div>
+</div>
+
+<!-- Custom Print Content -->
+<div class="card">
+    <div class="card-header text-center">
+        <h2 class="mb-0">ΚΑΤΑΛΟΓΟΣ ΣΤΡΑΤΙΩΤΩΝ</h2>
+        <h4 class="text-muted">{{ date.today().strftime('%d %B %Y') }}</h4>
+    </div>
+    
+    <div class="card-body">
+        {% if selected_fields %}
+            <div class="table-responsive">
+                <table class="table table-bordered custom-print-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 5%;">Α/Α</th>
+                            {% if 'name' in selected_fields %}
+                                <th>Όνομα</th>
+                            {% endif %}
+                            {% if 'military_id' in selected_fields %}
+                                <th>Στρ. Αριθμός</th>
+                            {% endif %}
+                            {% if 'specialty' in selected_fields %}
+                                <th>Ειδικότητα</th>
+                            {% endif %}
+                            {% if 'enlistment_date' in selected_fields %}
+                                <th>Ημ. Κατάταξης</th>
+                            {% endif %}
+                            {% if 'category' in selected_fields %}
+                                <th>Κατηγορία</th>
+                            {% endif %}
+                            {% if 'medical_category' in selected_fields %}
+                                <th>Ιατρική Κατηγορία</th>
+                            {% endif %}
+                            {% if 'personal_phone' in selected_fields %}
+                                <th>Τηλέφωνο</th>
+                            {% endif %}
+                            {% if 'parents_phone' in selected_fields %}
+                                <th>Τηλ. Γονέων</th>
+                            {% endif %}
+                            {% if 'residence_city' in selected_fields %}
+                                <th>Πόλη</th>
+                            {% endif %}
+                            {% if 'education' in selected_fields %}
+                                <th>Σπουδές</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for soldier in soldiers %}
+                        <tr>
+                            <td class="text-center">{{ loop.index }}</td>
+                            {% if 'name' in selected_fields %}
+                                <td><strong>{{ soldier.name }}</strong></td>
+                            {% endif %}
+                            {% if 'military_id' in selected_fields %}
+                                <td class="text-center">{{ soldier.military_id }}</td>
+                            {% endif %}
+                            {% if 'specialty' in selected_fields %}
+                                <td>{{ soldier.specialty or '-' }}</td>
+                            {% endif %}
+                            {% if 'enlistment_date' in selected_fields %}
+                                <td class="text-center">{{ soldier.enlistment_date.strftime('%d/%m/%Y') if soldier.enlistment_date else '-' }}</td>
+                            {% endif %}
+                            {% if 'category' in selected_fields %}
+                                <td>{{ soldier.category or '-' }}</td>
+                            {% endif %}
+                            {% if 'medical_category' in selected_fields %}
+                                <td class="text-center">{{ soldier.medical_category or '-' }}</td>
+                            {% endif %}
+                            {% if 'personal_phone' in selected_fields %}
+                                <td>{{ soldier.personal_phone or '-' }}</td>
+                            {% endif %}
+                            {% if 'parents_phone' in selected_fields %}
+                                <td>{{ soldier.parents_phone or '-' }}</td>
+                            {% endif %}
+                            {% if 'residence_city' in selected_fields %}
+                                <td>{{ soldier.residence_city or '-' }}</td>
+                            {% endif %}
+                            {% if 'education' in selected_fields %}
+                                <td>{{ soldier.education or '-' }}</td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Footer -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <h6>Στατιστικά:</h6>
+                    <ul class="list-unstyled">
+                        <li>Σύνολο Στρατιωτών: {{ soldiers|length }}</li>
+                        <li>Ενεργοί: {{ soldiers|selectattr('status', 'equalto', 'Active')|list|length }}</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>Υπογραφή:</h6>
+                    <p class="signature-line">_________________________</p>
+                    <p class="text-muted">Ημερομηνία: {{ date.today().strftime('%d/%m/%Y') }}</p>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-warning text-center">
+                <h5>Δεν έχουν επιλεγεί πεδία για εκτύπωση</h5>
+                <p>Παρακαλώ επιστρέψτε και επιλέξτε τουλάχιστον ένα πεδίο.</p>
+                <a href="{{ url_for('prints') }}" class="btn btn-primary">
+                    <i class="fas fa-arrow-left me-1"></i>Επιστροφή
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function printCustom() {
+    window.print();
+}
+
+// Auto-print if in print mode
+{% if print_mode %}
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        window.print();
+    }, 1000);
+});
+{% endif %}
+</script>
+{% endblock %}

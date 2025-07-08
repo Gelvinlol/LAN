@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+
+{% block title %}Πρόγραμμα - Στρατιωτική Εφαρμογή{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-calendar-alt me-2"></i>
+        Διαχείριση Προγράμματος
+    </h1>
+    <div>
+        <a href="{{ url_for('duty_sheet', date=schedule_date.strftime('%Y-%m-%d')) }}" class="btn btn-info me-2">
+            <i class="fas fa-print me-1"></i>Φύλλο Υπηρεσίας
+        </a>
+    </div>
+</div>
+
+<!-- Date Selection and Controls -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-4">
+                <label for="schedule_date" class="form-label">Επιλογή Ημερομηνίας</label>
+                <input type="date" class="form-control" id="schedule_date" 
+                       value="{{ schedule_date.strftime('%Y-%m-%d') }}" 
+                       onchange="changeScheduleDate(this.value)">
+            </div>
+            <div class="col-md-8 text-end">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-success" onclick="generateSchedule()">
+                        <i class="fas fa-magic me-1"></i>Αυτόματη Δημιουργία
+                    </button>
+                    {% if schedule_obj and assignments and not schedule_obj.is_finalized %}
+                    <button type="button" class="btn btn-primary" onclick="finalizeSchedule()">
+                        <i class="fas fa-check me-1"></i>Οριστικοποίηση
+                    </button>
+                    {% endif %}
+                    <button type="button" class="btn btn-warning" onclick="clearSchedule()">
+                        <i class="fas fa-eraser me-1"></i>Καθαρισμός
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Status -->
+{% if assignments %}
+    {% if schedule_obj %}
+    <div class="alert {{ 'alert-success' if schedule_obj.is_finalized else 'alert-warning' }}">
+        <i class="fas {{ 'fa-check-circle' if schedule_obj.is_finalized else 'fa-exclamation-triangle' }} me-2"></i>
+        {% if schedule_obj.is_finalized %}
+            <strong>Οριστικοποιημένο:</strong> Το πρόγραμμα για {{ schedule_date.strftime('%d/%m/%Y') }} έχει οριστικοποιηθεί και οι υπηρεσίες είναι επίσημες.
+        {% else %}
+            <strong>Προσχέδιο:</strong> Το πρόγραμμα για {{ schedule_date.strftime('%d/%m/%Y') }} είναι σε κατάσταση προσχεδίου. Πατήστε "Οριστικοποίηση" για να το κάνετε επίσημο.
+        {% endif %}
+        {% if schedule_obj.notes %}
+            <br><strong>Σημειώσεις:</strong> {{ schedule_obj.notes }}
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>Πρόγραμμα χωρίς καταγραφή:</strong> Υπάρχουν υπηρεσίες για {{ schedule_date.strftime('%d/%m/%Y') }} αλλά δεν έχει δημιουργηθεί επίσημο πρόγραμμα.
+    </div>
+    {% endif %}
+{% else %}
+<div class="alert alert-secondary">
+    <i class="fas fa-calendar-alt me-2"></i>
+    <strong>Κενό πρόγραμμα:</strong> Δεν υπάρχουν υπηρεσίες για {{ schedule_date.strftime('%d/%m/%Y') }}. Χρησιμοποιήστε την "Αυτόματη Δημιουργία" για να δημιουργήσετε πρόγραμμα.
+</div>
+{% endif %}
+
+<!-- Schedule Display -->
+<div class="card">
+    <div class="card-header">
+        <h4 class="mb-0">
+            <i class="fas fa-calendar-day me-2"></i>
+            Πρόγραμμα για {{ schedule_date.strftime('%d/%m/%Y') }}
+        </h4>
+    </div>
+    <div class="card-body">
+        {% if assignments %}
+            <div class="table-responsive">
+                <table class="table table-hover schedule-table">
+                    <thead>
+                        <tr>
+                            <th>Υπηρεσία</th>
+                            <th>ΝΟΥΜΕΡΟ</th>
+                            <th>Στρατιώτης {% if schedule_obj and not schedule_obj.is_finalized %}<small class="text-muted">(Επεξεργάσιμο)</small>{% endif %}</th>
+                            <th>Στρατιωτικός Αρ.</th>
+                            <th>Θέση</th>
+                            <th>Σημειώσεις</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assignment, soldier, duty_type in assignments %}
+                        <tr>
+                            <td>
+                                <strong>{{ duty_type.name }}</strong>
+                                {% if duty_type.description %}
+                                    <br><small class="text-muted">{{ duty_type.description }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-info">Βάρδια {{ assignment.shift_number }}</span>
+                            </td>
+                            <td>
+                                {% if schedule_obj and not schedule_obj.is_finalized %}
+                                <!-- Editable dropdown for draft schedules -->
+                                <form method="POST" action="{{ url_for('edit_assignment', assignment_id=assignment.id) }}" class="d-inline assignment-form">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+                                    <select name="soldier_id" class="form-select form-select-sm assignment-select" 
+                                            onchange="updateAssignment(this)" style="min-width: 250px;"
+                                            data-original-value="{{ soldier.id }}"
+                                            data-assignment-id="{{ assignment.id }}">
+                                        {% for available_soldier in available_soldiers %}
+                                        <option value="{{ available_soldier.id }}" 
+                                                {% if available_soldier.id == soldier.id %}selected{% endif %}
+                                                {% if available_soldier.exemption_no_duty %}disabled{% endif %}>
+                                            {{ available_soldier.name }}
+                                            {% if available_soldier.exemption_no_duty %} (Άνευ υπηρεσίας)
+                                            {% else %}
+                                                {% set last_duty_date = available_soldier.get_last_duty_date() %}
+                                                {% if last_duty_date %} - Τελευταία: {{ last_duty_date.strftime('%d/%m/%Y') }}
+                                                {% else %} - Καμία προηγούμενη υπηρεσία
+                                                {% endif %}
+                                            {% endif %}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="spinner-border spinner-border-sm ms-2 d-none" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </form>
+                                {% else %}
+                                <!-- Read-only display for finalized schedules -->
+                                {{ soldier.name }}
+                                {% if soldier.exemption_no_duty %}
+                                    <span class="badge bg-danger ms-1">Άνευ υπηρεσίας</span>
+                                {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>{{ soldier.military_id }}</td>
+                            <td>{{ assignment.position_in_team }}</td>
+                            <td>
+                                {% if assignment.notes %}
+                                    <small class="text-muted">{{ assignment.notes }}</small>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="text-center py-5">
+                    <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Δεν υπάρχει πρόγραμμα για αυτή την ημερομηνία</h5>
+                    <p class="text-muted">Χρησιμοποιήστε την αυτόματη δημιουργία για να δημιουργήσετε ένα δίκαιο πρόγραμμα.</p>
+                    <button type="button" class="btn btn-success" onclick="generateSchedule()">
+                        <i class="fas fa-magic me-1"></i>Αυτόματη Δημιουργία
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Instructions -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-question-circle me-2"></i>Οδηγίες Χρήσης
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Αυτόματη Δημιουργία:</h6>
+                <ul>
+                    <li>Δημιουργεί δίκαιο πρόγραμμα με βάση τη διαθεσιμότητα</li>
+                    <li>Λαμβάνει υπόψη τις προηγούμενες υπηρεσίες</li>
+                    <li>Αποφεύγει στρατιώτες με εξαιρέσεις</li>
+                    <li>Κατανέμει ισομερώς τις υπηρεσίες</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6>Χρονικές Περίοδοι Βαρδιών:</h6>
+                <ul>
+                    <li><strong>Βάρδια 1:</strong> 15:00-18:00, 00:00-02:00, 06:00-09:00</li>
+                    <li><strong>Βάρδια 2:</strong> 18:00-21:00, 02:00-04:00, 09:00-12:00</li>
+                    <li><strong>Βάρδια 3:</strong> 21:00-00:00, 04:00-06:00, 12:00-15:00</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function changeScheduleDate(newDate) {
+    window.location.href = '{{ url_for("schedule") }}?date=' + newDate;
+}
+
+function generateSchedule() {
+    const date = document.getElementById('schedule_date').value;
+    
+    if (confirm('Θέλετε να δημιουργήσετε αυτόματα το πρόγραμμα για ' + formatDate(date) + ';')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("generate_schedule") }}';
+        
+        const dateInput = document.createElement('input');
+        dateInput.type = 'hidden';
+        dateInput.name = 'date';
+        dateInput.value = date;
+        
+        form.appendChild(dateInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function clearSchedule() {
+    const date = document.getElementById('schedule_date').value;
+    
+    if (confirm('Θέλετε να διαγράψετε το πρόγραμμα για ' + formatDate(date) + '; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("clear_schedule") }}';
+        
+        const dateInput = document.createElement('input');
+        dateInput.type = 'hidden';
+        dateInput.name = 'date';
+        dateInput.value = date;
+        
+        form.appendChild(dateInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function finalizeSchedule() {
+    if (confirm('Είστε σίγουροι ότι θέλετε να οριστικοποιήσετε το πρόγραμμα; Μετά την οριστικοποίηση δεν θα μπορείτε να κάνετε αλλαγές.')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("finalize_schedule") }}';
+        
+        const dateInput = document.createElement('input');
+        dateInput.type = 'hidden';
+        dateInput.name = 'date';
+        dateInput.value = document.getElementById('schedule_date').value;
+        
+        form.appendChild(dateInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function updateAssignment(selectElement) {
+    const form = selectElement.closest('.assignment-form');
+    const spinner = form.querySelector('.spinner-border');
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    const soldierName = selectedOption.text.replace(' (Άνευ υπηρεσίας)', '');
+    const originalValue = selectElement.getAttribute('data-original-value');
+    const assignmentId = selectElement.getAttribute('data-assignment-id');
+    
+    console.log('DEBUG: Assignment update triggered');
+    console.log('DEBUG: Selected value:', selectElement.value);
+    console.log('DEBUG: Original value:', originalValue);
+    console.log('DEBUG: Selected soldier:', soldierName);
+    console.log('DEBUG: Assignment ID:', assignmentId);
+    
+    // Check if selection actually changed
+    if (selectElement.value === originalValue) {
+        console.log('DEBUG: No change detected, returning');
+        return; // No change, do nothing
+    }
+    
+    // Show confirmation dialog
+    if (confirm(`Είστε σίγουροι ότι θέλετε να αλλάξετε τον στρατιώτη σε ${soldierName};`)) {
+        console.log('DEBUG: User confirmed change, creating manual form submission');
+        
+        // Show loading indicator
+        spinner.classList.remove('d-none');
+        selectElement.disabled = true;
+        
+        // Create a new form with proper data
+        const newForm = document.createElement('form');
+        newForm.method = 'POST';
+        newForm.action = form.action;
+        
+        // Add soldier_id field
+        const soldierIdInput = document.createElement('input');
+        soldierIdInput.type = 'hidden';
+        soldierIdInput.name = 'soldier_id';
+        soldierIdInput.value = selectElement.value;
+        newForm.appendChild(soldierIdInput);
+        
+        // Add to document and submit
+        document.body.appendChild(newForm);
+        console.log('DEBUG: Submitting form with soldier_id:', selectElement.value);
+        newForm.submit();
+    } else {
+        console.log('DEBUG: User cancelled, restoring original value');
+        // Restore original selection without triggering change event
+        selectElement.value = originalValue;
+    }
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('el-GR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+}
+</script>
+{% endblock %}

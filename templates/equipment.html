@@ -1,0 +1,189 @@
+
+{% extends "base.html" %}
+
+{% block title %}Κατάλογος Εξοπλισμού - Στρατιωτική Εφαρμογή{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-tools me-2"></i>
+        Κατάλογος Εξοπλισμού
+    </h1>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEquipmentModal">
+        <i class="fas fa-plus me-1"></i>Προσθήκη Εξοπλισμού
+    </button>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label for="search" class="form-label">Αναζήτηση</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search }}" placeholder="Όνομα ή Σειριακός Αριθμός">
+            </div>
+            <div class="col-md-3">
+                <label for="status" class="form-label">Κατάσταση</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">Όλες</option>
+                    <option value="Available" {{ 'selected' if status_filter == 'Available' }}>Διαθέσιμος</option>
+                    <option value="Assigned" {{ 'selected' if status_filter == 'Assigned' }}>Ανατεθιμένος</option>
+                    <option value="Maintenance" {{ 'selected' if status_filter == 'Maintenance' }}>Συντήρηση</option>
+                    <option value="Lost" {{ 'selected' if status_filter == 'Lost' }}>Χαμένος</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="type" class="form-label">Τύπος</label>
+                <select class="form-select" id="type" name="type">
+                    <option value="">Όλοι</option>
+                    <option value="Όπλο" {{ 'selected' if type_filter == 'Όπλο' }}>Όπλο</option>
+                    <option value="Ρούχα" {{ 'selected' if type_filter == 'Ρούχα' }}>Ρούχα</option>
+                    <option value="Εξοπλισμός" {{ 'selected' if type_filter == 'Εξοπλισμός' }}>Εξοπλισμός</option>
+                    <option value="Άλλο" {{ 'selected' if type_filter == 'Άλλο' }}>Άλλο</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary">
+                    <i class="fas fa-search me-1"></i>Φίλτρα
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Equipment List -->
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Όνομα</th>
+                        <th>Σειριακός Αριθμός</th>
+                        <th>Τύπος</th>
+                        <th>Κατάσταση</th>
+                        <th>Ανατεθιμένος Σε</th>
+                        <th>Ημερομηνία Ανάθεσης</th>
+                        <th>Ενέργειες</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in equipment_list %}
+                    <tr>
+                        <td><strong>{{ item.name }}</strong></td>
+                        <td>{{ item.serial_number or '-' }}</td>
+                        <td>{{ item.equipment_type }}</td>
+                        <td>
+                            {% if item.status == 'Available' %}
+                                <span class="badge bg-success">Διαθέσιμος</span>
+                            {% elif item.status == 'Assigned' %}
+                                <span class="badge bg-primary">Ανατεθιμένος</span>
+                            {% elif item.status == 'Maintenance' %}
+                                <span class="badge bg-warning">Συντήρηση</span>
+                            {% else %}
+                                <span class="badge bg-danger">Χαμένος</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.soldier %}
+                                {{ item.soldier.name }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.assigned_date %}
+                                {{ item.assigned_date.strftime('%d/%m/%Y') }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                    data-bs-toggle="modal" data-bs-target="#assignModal{{ item.id }}">
+                                <i class="fas fa-user-plus me-1"></i>Ανάθεση
+                            </button>
+                        </td>
+                    </tr>
+                    
+                    <!-- Assignment Modal -->
+                    <div class="modal fade" id="assignModal{{ item.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Ανάθεση Εξοπλισμού: {{ item.name }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="POST" action="{{ url_for('assign_equipment', equipment_id=item.id) }}">
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label for="soldier_id{{ item.id }}" class="form-label">Στρατιώτης</label>
+                                            <select class="form-select" id="soldier_id{{ item.id }}" name="soldier_id">
+                                                <option value="">-- Χωρίς Ανάθεση --</option>
+                                                {% for soldier in available_soldiers %}
+                                                <option value="{{ soldier.id }}" 
+                                                        {{ 'selected' if item.assigned_to == soldier.id }}>
+                                                    {{ soldier.name }} ({{ soldier.military_id }})
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ακύρωση</button>
+                                        <button type="submit" class="btn btn-primary">Ανάθεση</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Equipment Modal -->
+<div class="modal fade" id="addEquipmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Προσθήκη Νέου Εξοπλισμού</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_equipment') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Όνομα *</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="serial_number" class="form-label">Σειριακός Αριθμός</label>
+                        <input type="text" class="form-control" id="serial_number" name="serial_number">
+                    </div>
+                    <div class="mb-3">
+                        <label for="equipment_type" class="form-label">Τύπος *</label>
+                        <select class="form-select" id="equipment_type" name="equipment_type" required>
+                            <option value="">Επιλέξτε τύπο</option>
+                            <option value="Όπλο">Όπλο</option>
+                            <option value="Ρούχα">Ρούχα</option>
+                            <option value="Εξοπλισμός">Εξοπλισμός</option>
+                            <option value="Άλλο">Άλλο</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Σημειώσεις</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ακύρωση</button>
+                    <button type="submit" class="btn btn-primary">Προσθήκη</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

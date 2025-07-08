@@ -1,0 +1,118 @@
+Στρατιωτική Εφαρμογή (LAN + Offline)
+
+> Build a modern, offline-first  application for use entirely within a local area network (LAN) without internet access. The app should run locally on a browser and be accessible from multiple office computers in a military camp.
+
+📌 App Purpose:
+
+A Military Unit Management System that allows the office clerk (γραμματέας μονάδας) to manage soldiers, track duties, and auto-generate fair duty schedules.
+
+
+---
+
+🪖 Core Features – Soldier Management:
+
+Add, edit, and delete soldiers.
+
+Track personal data: name, ID, enlistment date, specialty, etc.
+
+Track detailed duty history.
+
+Assign current status:
+
+Active
+
+On Leave (Αναρρωτική / Εκτός Υπηρεσίας)
+
+
+Assign special exemptions:
+
+"Άνευ υπηρεσίας"
+
+"Άνευ ξυρίσματος"
+
+"Άνευ αρβυλών"
+
+
+
+
+---
+
+🗓️ Smart Duty Scheduler:
+
+Automatically create fair, daily duty assignments based on:
+
+Availability
+
+Previous duties
+
+Status & exemptions
+
+
+Clerk can add new types of duties (custom duty types).
+
+Default included duties:
+
+Περίπολος (Patrol)
+
+Κεντρική Πύλη (Main Gate)
+
+Θαλαμοφύλακας (Dorm Watch)
+
+Μαγειρεία (Cookhouse)
+
+Λάντζα (Dishwashing)
+
+
+
+⏱️ Duty Time Slot Logic (example for Patrol):
+
+3 duty "νούμερα", each with 3 time segments (2-person teams):
+
+Number 1: 15:00–18:00, 00:00–02:00, 06:00–09:00
+
+Number 2: 18:00–21:00, 02:00–04:00, 09:00–12:00
+
+Number 3: 21:00–00:00, 04:00–06:00, 12:00–15:00
+
+
+Same applies to Main Gate & Dorm Watch
+
+
+
+---
+
+🖨️ Export & Print Functionality:
+
+Auto-generate printable daily duty sheet
+
+Button to export as print-friendly HTML or PDF
+
+A4 paper layout
+
+
+
+---
+
+🎨 User Interface Design:
+
+Modern, clean UI inspired by dashboard-style applications
+
+Use sky blue (#00BFFF or similar) as the primary theme color
+
+Sidebar or top navbar with clear navigation
+
+Responsive layout with dark text on light backgrounds
+
+Mobile/tablet support optional but preferred
+
+
+
+---
+
+⚙️ Technical Requirements:
+
+Fully offline-capable (no internet dependency)
+
+Accessible by multiple users over LAN
+
+create it with python and graphical interface

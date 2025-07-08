@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+
+{% block title %}Υπηρεσίες - Στρατιωτική Εφαρμογή{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-clipboard-list me-2"></i>
+        Διαχείριση Υπηρεσιών
+    </h1>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDutyModal">
+        <i class="fas fa-plus me-1"></i>Προσθήκη Υπηρεσίας
+    </button>
+</div>
+
+<!-- Duty Types Table -->
+<div class="card">
+    <div class="card-body">
+        {% if duty_types %}
+            <div class="table-responsive">
+                <table class="table table-hover duties-table">
+                    <thead>
+                        <tr>
+                            <th>Όνομα Υπηρεσίας</th>
+                            <th>Περιγραφή</th>
+                            <th>Μέγεθος Ομάδας</th>
+                            <th>ΝΟΥΜΕΡΟ / Ημέρα</th>
+                            <th>Ενεργή</th>
+                            <th>Ενέργειες</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for duty_type in duty_types %}
+                        <tr>
+                            <td>
+                                <strong>{{ duty_type.name }}</strong>
+                            </td>
+                            <td>{{ duty_type.description or '-' }}</td>
+                            <td>
+                                <span class="badge bg-info">{{ duty_type.team_size }} άτομα</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ duty_type.shifts_per_day }} ΝΟΥΜΕΡΟ</span>
+                            </td>
+                            <td>
+                                {% if duty_type.is_active %}
+                                    <span class="badge bg-success">Ενεργή</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Ανενεργή</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                            onclick="editDutyType({{ duty_type.id }})">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-warning" 
+                                            onclick="toggleDutyType({{ duty_type.id }}, {{ duty_type.is_active|lower }})">
+                                        <i class="fas fa-{{ 'pause' if duty_type.is_active else 'play' }}"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="text-center py-5">
+                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Δεν υπάρχουν υπηρεσίες</h5>
+                    <p class="text-muted">Προσθέστε την πρώτη υπηρεσία για να ξεκινήσετε.</p>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDutyModal">
+                        <i class="fas fa-plus me-1"></i>Προσθήκη Υπηρεσίας
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Default Duties Info -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-info-circle me-2"></i>Προεπιλεγμένες Υπηρεσίες
+        </h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-3">Οι παρακάτω υπηρεσίες προστέθηκαν αυτόματα κατά την εκκίνηση του συστήματος:</p>
+        <div class="row">
+            <div class="col-md-6">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <strong>Περίπολος</strong>
+                        <span class="text-muted">2 άτομα, 3 ΝΟΥΜΕΡΟ</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <strong>Κεντρική Πύλη</strong>
+                        <span class="text-muted">2 άτομα, 3 ΝΟΥΜΕΡΟ</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <strong>Θαλαμοφύλακας</strong>
+                        <span class="text-muted">1 άτομο, 3 ΝΟΥΜΕΡΟ</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <strong>Μαγειρεία</strong>
+                        <span class="text-muted">3 άτομα, 1 ΝΟΥΜΕΡΟ</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <strong>Λάντζα</strong>
+                        <span class="text-muted">2 άτομα, 1 ΝΟΥΜΕΡΟ</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Duty Type Modal -->
+<div class="modal fade" id="addDutyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Προσθήκη Νέας Υπηρεσίας</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_duty_type') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Όνομα Υπηρεσίας *</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Περιγραφή</label>
+                        <textarea class="form-control" id="description" name="description" rows="2"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="team_size" class="form-label">Μέγεθος Ομάδας</label>
+                                <select class="form-select" id="team_size" name="team_size">
+                                    <option value="1">1 άτομο</option>
+                                    <option value="2" selected>2 άτομα</option>
+                                    <option value="3">3 άτομα</option>
+                                    <option value="4">4 άτομα</option>
+                                    <option value="5">5 άτομα</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="shifts_per_day" class="form-label">ΝΟΥΜΕΡΟ / Ημέρα</label>
+                                <select class="form-select" id="shifts_per_day" name="shifts_per_day">
+                                    <option value="1">1 ΝΟΥΜΕΡΟ (Όλη μέρα)</option>
+                                    <option value="3" selected>3 ΝΟΥΜΕΡΟ (8ωρες)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Σημείωση:</strong> Για υπηρεσίες με 3 ΝΟΥΜΕΡΟ, θα δημιουργηθούν αυτόματα χρονικές περίοδοι 
+                        όπως αυτές του Περίπολου. Για 1 ΝΟΥΜΕΡΟ, θα οριστεί χρονική περίοδος 08:00-18:00.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ακύρωση</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Αποθήκευση
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Duty Type Modal -->
+<div class="modal fade" id="editDutyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Επεξεργασία Υπηρεσίας</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('edit_duty_type') }}">
+                <input type="hidden" id="edit_duty_id" name="duty_id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_name" class="form-label">Όνομα Υπηρεσίας *</label>
+                        <input type="text" class="form-control" id="edit_name" name="name" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit_description" class="form-label">Περιγραφή</label>
+                        <textarea class="form-control" id="edit_description" name="description" rows="2"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_team_size" class="form-label">Μέγεθος Ομάδας</label>
+                                <select class="form-select" id="edit_team_size" name="team_size">
+                                    <option value="1">1 άτομο</option>
+                                    <option value="2">2 άτομα</option>
+                                    <option value="3">3 άτομα</option>
+                                    <option value="4">4 άτομα</option>
+                                    <option value="5">5 άτομα</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_shifts_per_day" class="form-label">ΝΟΥΜΕΡΟ / Ημέρα</label>
+                                <select class="form-select" id="edit_shifts_per_day" name="shifts_per_day">
+                                    <option value="1">1 ΝΟΥΜΕΡΟ (Όλη μέρα)</option>
+                                    <option value="3">3 ΝΟΥΜΕΡΟ (8ωρες)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ακύρωση</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Ενημέρωση
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function editDutyType(dutyTypeId) {
+    // Fetch duty type data and populate edit modal
+    fetch(`/duties/${dutyTypeId}/edit`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('edit_duty_id').value = data.id;
+            document.getElementById('edit_name').value = data.name;
+            document.getElementById('edit_description').value = data.description || '';
+            document.getElementById('edit_team_size').value = data.team_size;
+            document.getElementById('edit_shifts_per_day').value = data.shifts_per_day;
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('editDutyModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error fetching duty type data:', error);
+            alert('Σφάλμα κατά την φόρτωση των στοιχείων της υπηρεσίας.');
+        });
+}
+
+function toggleDutyType(dutyTypeId, isActive) {
+    const action = isActive ? 'απενεργοποιήσετε' : 'ενεργοποιήσετε';
+    if (confirm(`Θέλετε να ${action} αυτή την υπηρεσία;`)) {
+        fetch(`/duties/${dutyTypeId}/toggle`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reload the page to show updated status
+                location.reload();
+            } else {
+                alert('Σφάλμα: ' + (data.error || 'Αδυναμία ενημέρωσης της υπηρεσίας'));
+            }
+        })
+        .catch(error => {
+            console.error('Error toggling duty type:', error);
+            alert('Σφάλμα κατά την ενεργοποίηση/απενεργοποίηση της υπηρεσίας.');
+        });
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,89 @@
+
+{% extends "base.html" %}
+
+{% block title %}Ειδοποιήσεις Στελέχωσης - Στρατιωτική Εφαρμογή{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        Ειδοποιήσεις Στελέχωσης
+    </h1>
+    <div>
+        <input type="date" class="form-control d-inline-block" id="check_date" 
+               value="{{ date.today().strftime('%Y-%m-%d') }}" style="width: auto;">
+        <button type="button" class="btn btn-warning ms-2" onclick="checkStaffing()">
+            <i class="fas fa-search me-1"></i>Έλεγχος Στελέχωσης
+        </button>
+    </div>
+</div>
+
+{% if alerts %}
+<div class="row">
+    {% for alert in alerts %}
+    <div class="col-md-6 mb-3">
+        <div class="card border-{{ 'danger' if alert.severity == 'Critical' else 'warning' if alert.severity == 'High' else 'info' }}">
+            <div class="card-header bg-{{ 'danger' if alert.severity == 'Critical' else 'warning' if alert.severity == 'High' else 'info' }} text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    {{ alert.duty_type.name }} - {{ alert.alert_date.strftime('%d/%m/%Y') }}
+                    <span class="badge bg-light text-dark ms-2">{{ alert.severity }}</span>
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h5 class="text-danger">{{ alert.required_staff }}</h5>
+                        <small class="text-muted">Απαιτούμενοι</small>
+                    </div>
+                    <div class="col-4">
+                        <h5 class="text-warning">{{ alert.available_staff }}</h5>
+                        <small class="text-muted">Διαθέσιμοι</small>
+                    </div>
+                    <div class="col-4">
+                        <h5 class="text-danger">-{{ alert.shortage }}</h5>
+                        <small class="text-muted">Έλλειψη</small>
+                    </div>
+                </div>
+                
+                {% if alert.notes %}
+                <div class="mt-3">
+                    <small class="text-muted">{{ alert.notes }}</small>
+                </div>
+                {% endif %}
+                
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        {{ alert.created_at.strftime('%d/%m/%Y %H:%M') }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+        <h4 class="text-success">Δεν υπάρχουν προβλήματα στελέχωσης!</h4>
+        <p class="text-muted">Όλες οι υπηρεσίες έχουν επαρκές προσωπικό.</p>
+        <button type="button" class="btn btn-primary" onclick="checkStaffing()">
+            <i class="fas fa-search me-1"></i>Έλεγχος για Νέα Ημερομηνία
+        </button>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function checkStaffing() {
+    const date = document.getElementById('check_date').value;
+    if (date) {
+        window.location.href = '{{ url_for("check_staffing", date_str="") }}' + date;
+    } else {
+        alert('Παρακαλώ επιλέξτε ημερομηνία');
+    }
+}
+</script>
+{% endblock %}

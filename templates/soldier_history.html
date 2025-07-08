@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Ιστορικό Υπηρεσιών - {{ soldier.name }} - Στρατιωτική Εφαρμογή{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-history me-2"></i>
+        Ιστορικό Υπηρεσιών - {{ soldier.name }}
+    </h1>
+    <a href="{{ url_for('soldiers') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Επιστροφή
+    </a>
+</div>
+
+<!-- Soldier Info -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h4 class="mb-0">
+            <i class="fas fa-user me-2"></i>
+            Στοιχεία Στρατιώτη
+        </h4>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Όνομα:</strong> {{ soldier.name }}</p>
+                <p><strong>Αριθμός Μητρώου:</strong> {{ soldier.military_id }}</p>
+                <p><strong>Ειδικότητα:</strong> {{ soldier.specialty or 'Δεν καθορίστηκε' }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Κατάσταση:</strong> 
+                    <span class="badge {{ 'bg-success' if soldier.status == 'Active' else 'bg-warning' }}">
+                        {{ soldier.status }}
+                    </span>
+                </p>
+                <p><strong>Μέρες ΕΥ:</strong> {{ soldier.days_out_of_service }}</p>
+                {% if soldier.out_of_service_reason %}
+                <p><strong>Λόγος ΕΥ:</strong> {{ soldier.out_of_service_reason }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Duty Statistics -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-primary">{{ total_duties }}</h3>
+                <p class="card-text">Σύνολο Υπηρεσιών</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Υπηρεσίες ανά Τύπο</h5>
+            </div>
+            <div class="card-body">
+                {% if duty_counts %}
+                    <div class="row">
+                        {% for duty_type, count in duty_counts.items() %}
+                        <div class="col-md-4 mb-2">
+                            <span class="badge bg-info me-2">{{ duty_type }}</span>
+                            <strong>{{ count }}</strong>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">Δεν υπάρχουν οριστικοποιημένες υπηρεσίες</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Duty History -->
+<div class="card">
+    <div class="card-header">
+        <h4 class="mb-0">
+            <i class="fas fa-list me-2"></i>
+            Ιστορικό Υπηρεσιών (Μόνο Οριστικοποιημένες)
+        </h4>
+    </div>
+    <div class="card-body p-0">
+        {% if duty_history %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Ημερομηνία</th>
+                            <th>Τύπος Υπηρεσίας</th>
+                            <th>ΝΟΥΜΕΡΟ</th>
+                            <th>Θέση στην Ομάδα</th>
+                            <th>Σημειώσεις</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assignment in duty_history %}
+                        <tr>
+                            <td>
+                                <strong>{{ assignment.duty_date.strftime('%d/%m/%Y') }}</strong>
+                                <div class="text-muted small">{{ assignment.duty_date.strftime('%A')|capitalize }}</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ assignment.duty_type.name }}</span>
+                                {% if assignment.duty_type.description %}
+                                <div class="text-muted small">{{ assignment.duty_type.description }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">Βάρδια {{ assignment.shift_number }}</span>
+                                {% set time_slot = assignment.get_time_slot() %}
+                                {% if time_slot %}
+                                <div class="text-muted small">{{ time_slot.start_time }} - {{ time_slot.end_time }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ assignment.position_in_team }}</span>
+                            </td>
+                            <td>
+                                <small>{{ assignment.notes or '-' }}</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="text-center py-5">
+                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Δεν υπάρχουν οριστικοποιημένες υπηρεσίες</h5>
+                    <p class="text-muted">Οι υπηρεσίες θα εμφανίζονται εδώ μόνο μετά την οριστικοποίηση του προγράμματος.</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if duty_history %}
+<!-- Monthly Summary -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Μηνιαία Στατιστικά</h5>
+    </div>
+    <div class="card-body">
+        {% set monthly_counts = {} %}
+        {% for assignment in duty_history %}
+            {% set month_key = assignment.duty_date.strftime('%Y-%m') %}
+            {% if month_key not in monthly_counts %}
+                {% set _ = monthly_counts.update({month_key: 0}) %}
+            {% endif %}
+            {% set _ = monthly_counts.update({month_key: monthly_counts[month_key] + 1}) %}
+        {% endfor %}
+        
+        <div class="row">
+            {% for month, count in monthly_counts.items() %}
+            <div class="col-md-3 mb-2">
+                <div class="card text-center">
+                    <div class="card-body py-2">
+                        <h6 class="card-title">{{ month }}</h6>
+                        <p class="card-text"><strong>{{ count }}</strong> υπηρεσίες</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Convert Greek day names
+document.addEventListener('DOMContentLoaded', function() {
+    const dayNames = {
+        'Monday': 'Δευτέρα',
+        'Tuesday': 'Τρίτη', 
+        'Wednesday': 'Τετάρτη',
+        'Thursday': 'Πέμπτη',
+        'Friday': 'Παρασκευή',
+        'Saturday': 'Σάββατο',
+        'Sunday': 'Κυριακή'
+    };
+    
+    document.querySelectorAll('.text-muted.small').forEach(function(element) {
+        const text = element.textContent.trim();
+        if (dayNames[text]) {
+            element.textContent = dayNames[text];
+        }
+    });
+});
+</script>
+{% endblock %}

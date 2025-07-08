@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Προφίλ Στρατιώτη - {{ soldier.name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">🪖 Διαχείριση Μονάδας</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('soldiers') }}">← Επιστροφή στους Στρατιώτες</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">👤 Προφίλ Στρατιώτη: {{ soldier.name }}</h4>
+                        <div>
+                            <span class="badge bg-light text-dark">{{ soldier.military_id }}</span>
+                            {% if soldier.category %}
+                                <span class="badge bg-success">{{ soldier.category }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Βασικά Στοιχεία -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary border-bottom pb-2">Βασικά Στοιχεία</h5>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>Ονοματεπώνυμο:</strong><br>
+                                {{ soldier.name }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>Στρατιωτικός Αριθμός:</strong><br>
+                                {{ soldier.military_id }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>Εγγραφή στο Τάγμα:</strong><br>
+                                {{ soldier.enlistment_date.strftime('%d/%m/%Y') if soldier.enlistment_date else '-' }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>Ημερομηνία Γέννησης:</strong><br>
+                                {{ soldier.birth_date.strftime('%d/%m/%Y') if soldier.birth_date else '-' }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>Κατηγορία:</strong><br>
+                                {{ soldier.category or '-' }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>Ιατρική Κατηγορία:</strong><br>
+                                {% if soldier.medical_category %}
+                                    <span class="badge bg-{% if soldier.medical_category == 'Ι4' %}danger{% elif soldier.medical_category == 'Ι3 ΑΟΠΛΟ' %}warning{% else %}success{% endif %}">
+                                        {{ soldier.medical_category }}
+                                    </span>
+                                    <div class="text-muted small mt-1">
+                                        {% if soldier.medical_category in ['Ι1', 'Ι2', 'Ι3 ΕΝΟΠΛΟ'] %}
+                                            Κανονικές υπηρεσίες
+                                        {% elif soldier.medical_category == 'Ι3 ΑΟΠΛΟ' %}
+                                            Υπηρεσίες χωρίς όπλο
+                                        {% elif soldier.medical_category == 'Ι4' %}
+                                            Δεν κάνει υπηρεσία
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>Ειδικότητα:</strong><br>
+                                {{ soldier.specialty or '-' }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>Κατάσταση:</strong><br>
+                                <span class="badge bg-{% if soldier.status == 'Active' %}success{% else %}warning{% endif %}">
+                                    {{ soldier.status }}
+                                </span>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>Επάγγελμα:</strong><br>
+                                {{ soldier.profession or '-' }}
+                            </div>
+                        </div>
+
+                        <!-- Οικογενειακά Στοιχεία -->
+                        {% if soldier.father_name or soldier.mother_name or soldier.father_profession or soldier.mother_profession %}
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary border-bottom pb-2">Οικογενειακά Στοιχεία</h5>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>Όνομα Πατρός:</strong><br>
+                                {{ soldier.father_name or '-' }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>Όνομα Μητρός:</strong><br>
+                                {{ soldier.mother_name or '-' }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>Επάγγελμα Πατρός:</strong><br>
+                                {{ soldier.father_profession or '-' }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>Επάγγελμα Μητρός:</strong><br>
+                                {{ soldier.mother_profession or '-' }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <strong>Αδέλφια:</strong><br>
+                                {% if soldier.brothers_count or soldier.sisters_count %}
+                                    {{ soldier.brothers_count or 0 }} Αγόρια, {{ soldier.sisters_count or 0 }} Κορίτσια
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Στοιχεία Επικοινωνίας & Διαμονής -->
+                        {% if soldier.residence_address or soldier.personal_phone or soldier.email %}
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary border-bottom pb-2">Στοιχεία Επικοινωνίας & Διαμονής</h5>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <strong>Διεύθυνση Διαμονής:</strong><br>
+                                {{ soldier.residence_address or '-' }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>Πόλη:</strong><br>
+                                {{ soldier.residence_city or '-' }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>Νομός:</strong><br>
+                                {{ soldier.residence_prefecture or '-' }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>Τηλέφωνο Προσωπικό:</strong><br>
+                                {{ soldier.personal_phone or '-' }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>Τηλέφωνο Γονέων:</strong><br>
+                                {{ soldier.parents_phone or '-' }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>Email:</strong><br>
+                                {{ soldier.email or '-' }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>Email Γονέα:</strong><br>
+                                {{ soldier.parent_email or '-' }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Εκπαίδευση & Δεξιότητες -->
+                        {% if soldier.education or soldier.special_skills %}
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary border-bottom pb-2">Εκπαίδευση & Δεξιότητες</h5>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <strong>Σπουδές:</strong><br>
+                                {{ soldier.education or '-' }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <strong>Ειδικές Γνώσεις:</strong><br>
+                                {{ soldier.special_skills or '-' }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Οικονομικά Στοιχεία -->
+                        {% if soldier.amka or soldier.tax_number or soldier.iban or soldier.bank %}
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary border-bottom pb-2">Οικονομικά Στοιχεία</h5>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>ΑΜΚΑ:</strong><br>
+                                {{ soldier.amka or '-' }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <strong>ΑΦΜ:</strong><br>
+                                {{ soldier.tax_number or '-' }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <strong>ΙΒΑΝ:</strong><br>
+                                <code>{{ soldier.iban or '-' }}</code>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <strong>Τράπεζα:</strong><br>
+                                {{ soldier.bank or '-' }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Εξαιρέσεις -->
+                        {% if soldier.exemption_no_duty or soldier.exemption_no_shaving or soldier.exemption_no_boots or soldier.days_out_of_service %}
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary border-bottom pb-2">Εξαιρέσεις & Κατάσταση</h5>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                {% if soldier.exemption_no_duty %}
+                                    <span class="badge bg-danger me-2">Άνευ Υπηρεσίας</span>
+                                {% endif %}
+                                {% if soldier.exemption_no_shaving %}
+                                    <span class="badge bg-warning me-2">Άνευ Ξυρίσματος</span>
+                                {% endif %}
+                                {% if soldier.exemption_no_boots %}
+                                    <span class="badge bg-info me-2">Άνευ Αρβυλών</span>
+                                {% endif %}
+                            </div>
+                            {% if soldier.days_out_of_service > 0 %}
+                            <div class="col-md-6 mb-3">
+                                <strong>Μέρες ΕΥ:</strong><br>
+                                {{ soldier.days_out_of_service }} μέρες
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <strong>Λόγος ΕΥ:</strong><br>
+                                {{ soldier.out_of_service_reason or '-' }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Παρατηρήσεις -->
+                        {% if soldier.interview_notes %}
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary border-bottom pb-2">Παρατηρήσεις Συνέντευξης</h5>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="bg-light p-3 rounded">
+                                    {{ soldier.interview_notes }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Ιστορικό Υπηρεσιών -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary border-bottom pb-2">Στατιστικά Υπηρεσιών</h5>
+                            </div>
+                            <div class="col-md-12">
+                                {% set duty_counts = soldier.get_duty_counts_by_type() %}
+                                {% if duty_counts %}
+                                    <div class="d-flex flex-wrap">
+                                        {% for duty_name, count in duty_counts.items() %}
+                                        <span class="badge bg-secondary me-2 mb-1">{{ duty_name }}: {{ count }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    <p class="mt-2 text-muted">
+                                        <strong>Σύνολο υπηρεσιών:</strong> {{ soldier.get_total_finalized_duties() }}
+                                    </p>
+                                {% else %}
+                                    <p class="text-muted">Δεν υπάρχουν καταγεγραμμένες υπηρεσίες.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('soldiers') }}" class="btn btn-secondary">
+                                ← Επιστροφή στη Λίστα
+                            </a>
+                            <div>
+                                <a href="{{ url_for('soldier_history', soldier_id=soldier.id) }}" class="btn btn-info me-2">
+                                    📋 Ιστορικό Υπηρεσιών
+                                </a>
+                                <a href="{{ url_for('edit_soldier', soldier_id=soldier.id) }}" class="btn btn-primary">
+                                    ✏️ Επεξεργασία
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

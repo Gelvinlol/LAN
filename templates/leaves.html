@@ -1,0 +1,110 @@
+
+{% extends "base.html" %}
+
+{% block title %}Ημερολόγιο Αδειών - Στρατιωτική Εφαρμογή{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-calendar-alt me-2"></i>
+        Ημερολόγιο Αδειών
+    </h1>
+    <a href="{{ url_for('add_leave') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>Νέα Άδεια
+    </a>
+</div>
+
+<!-- Active Leaves Alert -->
+{% if active_leaves %}
+<div class="alert alert-info mb-4">
+    <h5><i class="fas fa-info-circle me-2"></i>Τρέχουσες Άδειες ({{ active_leaves|length }})</h5>
+    <div class="row">
+        {% for leave in active_leaves %}
+        <div class="col-md-6 mb-2">
+            <strong>{{ leave.soldier.name }}</strong> - {{ leave.leave_type }} 
+            ({{ leave.start_date.strftime('%d/%m') }} - {{ leave.end_date.strftime('%d/%m') }})
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label for="status" class="form-label">Κατάσταση</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">Όλες</option>
+                    <option value="Pending" {{ 'selected' if status_filter == 'Pending' }}>Εκκρεμής</option>
+                    <option value="Approved" {{ 'selected' if status_filter == 'Approved' }}>Εγκεκριμένη</option>
+                    <option value="Rejected" {{ 'selected' if status_filter == 'Rejected' }}>Απορριφθείσα</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="month" class="form-label">Μήνας</label>
+                <input type="month" class="form-control" id="month" name="month" value="{{ month_filter }}">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary">
+                    <i class="fas fa-search me-1"></i>Φίλτρα
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Leaves List -->
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Στρατιώτης</th>
+                        <th>Τύπος Άδειας</th>
+                        <th>Από</th>
+                        <th>Έως</th>
+                        <th>Ημέρες</th>
+                        <th>Κατάσταση</th>
+                        <th>Λόγος</th>
+                        <th>Ενέργειες</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for leave in leaves_list %}
+                    <tr>
+                        <td><strong>{{ leave.soldier.name }}</strong></td>
+                        <td>{{ leave.leave_type }}</td>
+                        <td>{{ leave.start_date.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ leave.end_date.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ leave.days_count }}</td>
+                        <td>
+                            {% if leave.status == 'Pending' %}
+                                <span class="badge bg-warning">Εκκρεμής</span>
+                            {% elif leave.status == 'Approved' %}
+                                <span class="badge bg-success">Εγκεκριμένη</span>
+                            {% else %}
+                                <span class="badge bg-danger">Απορριφθείσα</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ leave.reason or '-' }}</td>
+                        <td>
+                            {% if leave.status == 'Pending' %}
+                            <form method="POST" action="{{ url_for('approve_leave', leave_id=leave.id) }}" style="display: inline;">
+                                <button type="submit" class="btn btn-sm btn-success" 
+                                        onclick="return confirm('Είστε σίγουροι ότι θέλετε να εγκρίνετε αυτή την άδεια;')">
+                                    <i class="fas fa-check me-1"></i>Έγκριση
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

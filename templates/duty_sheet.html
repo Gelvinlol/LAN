@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Φύλλο Υπηρεσίας - Στρατιωτική Εφαρμογή{% endblock %}
+
+{% block extra_head %}
+{% if print_mode %}
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        .container-fluid { margin: 0; padding: 0; }
+        .card { border: none; box-shadow: none; }
+        .card-header { background: none !important; }
+        body { font-size: 12px; }
+        h1, h2, h3, h4, h5 { color: black !important; }
+        .table th { background-color: #f8f9fa !important; }
+        .badge { border: 1px solid #000; }
+    }
+    
+    @page {
+        size: A4;
+        margin: 1cm;
+    }
+}
+</style>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="no-print d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-print me-2"></i>
+        Φύλλο Υπηρεσίας
+    </h1>
+    <div>
+        <input type="date" class="form-control d-inline-block" id="sheet_date" 
+               value="{{ sheet_date.strftime('%Y-%m-%d') }}" 
+               onchange="changeSheetDate(this.value)" style="width: auto;">
+        <button type="button" class="btn btn-primary ms-2" onclick="printSheet()">
+            <i class="fas fa-print me-1"></i>Εκτύπωση
+        </button>
+        <a href="{{ url_for('schedule', date=sheet_date.strftime('%Y-%m-%d')) }}" class="btn btn-secondary ms-2">
+            <i class="fas fa-arrow-left me-1"></i>Πίσω στο Πρόγραμμα
+        </a>
+    </div>
+</div>
+
+<!-- Duty Sheet Header -->
+<div class="card">
+    <div class="card-header text-center">
+        <h2 class="mb-0">ΦΥΛΛΟ ΥΠΗΡΕΣΙΑΣ</h2>
+        <h4 class="text-muted">{{ sheet_date.strftime('%A, %d %B %Y') }}</h4>
+    </div>
+    
+    <div class="card-body">
+        {% if organized_duties %}
+            {% for duty_name, shifts in organized_duties.items() %}
+            <div class="duty-section mb-4">
+                <h4 class="duty-title">
+                    <i class="fas fa-chevron-right me-2"></i>{{ duty_name }}
+                </h4>
+                
+                <div class="table-responsive">
+                    <table class="table table-bordered duty-sheet-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Νούμερο</th>
+                                <th>Χρονικό Διάστημα</th>
+                                <th>Στρατιώτης</th>
+                                <th>Στρατιωτικός Αριθμός</th>
+                                <th>Θέση</th>
+                                <th>Υπογραφή</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for shift_name, assignments in shifts.items() %}
+                                {% for assignment_data in assignments %}
+                                <tr>
+                                    {% if loop.index == 1 %}
+                                    <td rowspan="{{ assignments|length }}" class="align-middle text-center">
+                                        <strong>{{ shift_name.replace('Shift ', '') }}ο</strong>
+                                    </td>
+                                    <td rowspan="{{ assignments|length }}" class="align-middle text-center">
+                                        <strong>{{ assignment_data.time_info }}</strong>
+                                    </td>
+                                    {% endif %}
+                                    <td>{{ assignment_data.soldier.name }}</td>
+                                    <td class="text-center">{{ assignment_data.soldier.military_id }}</td>
+                                    <td class="text-center">{{ assignment_data.assignment.position_in_team }}</td>
+                                    <td class="signature-cell"></td>
+                                </tr>
+                                {% endfor %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <!-- Signature Section -->
+            <div class="signature-section mt-5">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="signature-box">
+                            <p class="mb-1"><strong>Γραμματέας Μονάδας:</strong></p>
+                            <p class="signature-line">_________________________</p>
+                            <p class="text-muted">Ημερομηνία: {{ sheet_date.strftime('%d/%m/%Y') }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="signature-box">
+                            <p class="mb-1"><strong>Αξιωματικός Υπηρεσίας:</strong></p>
+                            <p class="signature-line">_________________________</p>
+                            <p class="text-muted">Ημερομηνία: {{ sheet_date.strftime('%d/%m/%Y') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Notes Section -->
+            <div class="notes-section mt-4">
+                <h5>Σημειώσεις:</h5>
+                <div class="notes-lines">
+                    <div class="note-line">_____________________________________________________________</div>
+                    <div class="note-line">_____________________________________________________________</div>
+                    <div class="note-line">_____________________________________________________________</div>
+                    <div class="note-line">_____________________________________________________________</div>
+                </div>
+            </div>
+            
+        {% else %}
+            <div class="empty-state">
+                <div class="text-center py-5">
+                    <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Δεν υπάρχει πρόγραμμα για αυτή την ημερομηνία</h5>
+                    <p class="text-muted">Δημιουργήστε πρώτα το πρόγραμμα για να εκτυπώσετε το φύλλο υπηρεσίας.</p>
+                    <a href="{{ url_for('schedule', date=sheet_date.strftime('%Y-%m-%d')) }}" class="btn btn-primary no-print">
+                        <i class="fas fa-calendar-alt me-1"></i>Μετάβαση στο Πρόγραμμα
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Footer -->
+{% if organized_duties %}
+<div class="footer-info mt-4 no-print">
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6>Στατιστικά:</h6>
+                    <ul class="list-unstyled">
+                        <li>Σύνολο Υπηρεσιών: {{ organized_duties|length }}</li>
+                        <li>Σύνολο Στρατιωτών: 
+                            {% set total_soldiers = namespace(value=0) %}
+                            {% for duty_type, shifts in organized_duties.items() %}
+                                {% for shift, assignments in shifts.items() %}
+                                    {% set total_soldiers.value = total_soldiers.value + assignments|length %}
+                                {% endfor %}
+                            {% endfor %}
+                            {{ total_soldiers.value }}
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6>Χρονικές Περίοδοι:</h6>
+                    <ul class="list-unstyled small">
+                        <li>ΝΟΥΜΕΡΟ 1: Πρωί, Μεσημέρι, Βράδυ</li>
+                        <li>ΝΟΥΜΕΡΟ 2: Απόγευμα, Νύχτα, Πρωί</li>
+                        <li>ΝΟΥΜΕΡΟ 3: Βράδυ, Νύχτα, Μεσημέρι</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6>Εκτυπώθηκε:</h6>
+                    <p class="mb-0">{{ sheet_date.strftime('%d/%m/%Y') }}</p>
+                    <p class="text-muted small">Στρατιωτική Εφαρμογή v1.0</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function changeSheetDate(newDate) {
+    window.location.href = '{{ url_for("duty_sheet") }}?date=' + newDate;
+}
+
+function printSheet() {
+    window.open('{{ url_for("print_duty_sheet", date=sheet_date.strftime("%Y-%m-%d")) }}', '_blank');
+}
+
+// Auto-print if in print mode
+{% if print_mode %}
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        window.print();
+    }, 1000);
+});
+{% endif %}
+</script>
+{% endblock %}

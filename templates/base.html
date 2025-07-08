@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Στρατιωτική Εφαρμογή Διαχείρισης{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark military-nav">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-shield-alt me-2"></i>
+                Στρατιωτική Εφαρμογή
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'index' }}" href="{{ url_for('index') }}">
+                            <i class="fas fa-home me-1"></i>Αρχική
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'soldiers' }}" href="{{ url_for('soldiers') }}">
+                            <i class="fas fa-users me-1"></i>Στρατιώτες
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'duties' }}" href="{{ url_for('duties') }}">
+                            <i class="fas fa-clipboard-list me-1"></i>Υπηρεσίες
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'schedule' }}" href="{{ url_for('schedule') }}">
+                            <i class="fas fa-calendar-alt me-1"></i>Πρόγραμμα
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'duty_sheet' }}" href="{{ url_for('duty_sheet') }}">
+                            <i class="fas fa-print me-1"></i>Φύλλο Υπηρεσίας
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'prints' }}" href="{{ url_for('prints') }}">
+                            <i class="fas fa-file-pdf me-1"></i>Εκτυπώσεις
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'equipment' }}" href="{{ url_for('equipment') }}">
+                            <i class="fas fa-tools me-1"></i>Εξοπλισμός
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'leaves' }}" href="{{ url_for('leaves') }}">
+                            <i class="fas fa-calendar-alt me-1"></i>Άδειες
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'staffing_alerts' }}" href="{{ url_for('staffing_alerts') }}">
+                            <i class="fas fa-exclamation-triangle me-1"></i>Ειδοποιήσεις
+                        </a>
+                    </li>
+                </ul>
+                
+                <!-- User Profile Dropdown -->
+                {% if current_user.is_authenticated %}
+                <div class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="user-avatar me-2">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <div class="user-info">
+                                <div class="user-name">{{ current_user.full_name }}</div>
+                                <div class="user-role">{{ current_user.role }}</div>
+                            </div>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end user-dropdown">
+                            <li>
+                                <div class="dropdown-header">
+                                    <strong>{{ current_user.full_name }}</strong>
+                                    <div class="text-muted">{{ current_user.role }}</div>
+                                    {% if current_user.last_login %}
+                                    <div class="text-muted small">Τελευταία σύνδεση: {{ current_user.last_login.strftime('%d/%m/%Y %H:%M') }}</div>
+                                    {% endif %}
+                                </div>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            {% if current_user.can_view_logs() %}
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('view_logs') }}">
+                                    <i class="fas fa-history me-2"></i>Αρχείο Δραστηριοτήτων
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            <li>
+                                <a class="dropdown-item text-danger" href="{{ url_for('logout') }}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Αποσύνδεση
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Page Content -->
+        <div class="row">
+            <div class="col-12">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

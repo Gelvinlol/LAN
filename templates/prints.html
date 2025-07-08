@@ -1,0 +1,217 @@
+
+{% extends "base.html" %}
+
+{% block title %}Εκτυπώσεις - Στρατιωτική Εφαρμογή{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-file-pdf me-2"></i>
+        Εκτυπώσεις
+    </h1>
+</div>
+
+<div class="row">
+    <!-- Δυναμολόγιο -->
+    <div class="col-lg-6 col-md-12 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-users me-2"></i>
+                    Δυναμολόγιο
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Εκτύπωση καταλόγου όλων των στρατιωτών με τις υπηρεσίες τους για την επιλεγμένη ημερομηνία. 
+                    Χρήσιμο για τη βραδινή αναφορά και τον έλεγχο παρουσίας.
+                </p>
+                <form method="GET" action="{{ url_for('print_roster') }}" class="mb-3">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <label for="roster_date" class="form-label">Ημερομηνία:</label>
+                            <input type="date" class="form-control" id="roster_date" name="date" 
+                                   value="{{ date.today().strftime('%Y-%m-%d') }}">
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-eye me-1"></i>Προεπισκόπηση
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                <button type="button" class="btn btn-success" onclick="printRoster()">
+                    <i class="fas fa-print me-1"></i>Άμεση Εκτύπωση
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Προσαρμοσμένη Εκτύπωση -->
+    <div class="col-lg-6 col-md-12 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-cog me-2"></i>
+                    Προσαρμοσμένη Εκτύπωση
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Επιλέξτε τα πεδία που θέλετε να εκτυπώσετε για όλους τους στρατιώτες.
+                </p>
+                <form id="customPrintForm" method="GET" action="{{ url_for('print_custom') }}">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="fields" value="name" id="field_name" checked>
+                                <label class="form-check-label" for="field_name">Όνομα</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="fields" value="military_id" id="field_military_id" checked>
+                                <label class="form-check-label" for="field_military_id">Στρατιωτικός Αριθμός</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="fields" value="specialty" id="field_specialty">
+                                <label class="form-check-label" for="field_specialty">Ειδικότητα</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="fields" value="enlistment_date" id="field_enlistment_date">
+                                <label class="form-check-label" for="field_enlistment_date">Ημ. Κατάταξης</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="fields" value="category" id="field_category">
+                                <label class="form-check-label" for="field_category">Κατηγορία</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="fields" value="medical_category" id="field_medical_category">
+                                <label class="form-check-label" for="field_medical_category">Ιατρική Κατηγορία</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="fields" value="parents_phone" id="field_parents_phone">
+                                <label class="form-check-label" for="field_parents_phone">Τηλ. Γονέων</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="fields" value="personal_phone" id="field_personal_phone">
+                                <label class="form-check-label" for="field_personal_phone">Τηλέφωνο</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="fields" value="residence_city" id="field_residence_city">
+                                <label class="form-check-label" for="field_residence_city">Πόλη Διαμονής</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="fields" value="education" id="field_education">
+                                <label class="form-check-label" for="field_education">Σπουδές</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="submit" class="btn btn-info">
+                            <i class="fas fa-eye me-1"></i>Προεπισκόπηση
+                        </button>
+                        <button type="button" class="btn btn-success" onclick="printCustom()">
+                            <i class="fas fa-print me-1"></i>Εκτύπωση
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Print Links -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    Γρήγορες Εκτυπώσεις
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('duty_sheet') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-calendar-day me-1"></i>Φύλλο Υπηρεσίας
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button type="button" class="btn btn-outline-success w-100" onclick="printContactList()">
+                            <i class="fas fa-phone me-1"></i>Κατάλογος Τηλεφώνων
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button type="button" class="btn btn-outline-info w-100" onclick="printMedicalCategories()">
+                            <i class="fas fa-heartbeat me-1"></i>Ιατρικές Κατηγορίες
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button type="button" class="btn btn-outline-warning w-100" onclick="printEmergencyList()">
+                            <i class="fas fa-exclamation-triangle me-1"></i>Λίστα Εκτάκτων Αναγκών
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function printRoster() {
+    const date = document.getElementById('roster_date').value;
+    window.open('{{ url_for("print_roster") }}?date=' + date + '&print=true', '_blank');
+}
+
+function printCustom() {
+    const form = document.getElementById('customPrintForm');
+    const formData = new FormData(form);
+    const params = new URLSearchParams();
+    
+    for (let [key, value] of formData.entries()) {
+        params.append(key, value);
+    }
+    params.append('print', 'true');
+    
+    window.open('{{ url_for("print_custom") }}?' + params.toString(), '_blank');
+}
+
+function printContactList() {
+    const params = new URLSearchParams();
+    params.append('fields', 'name');
+    params.append('fields', 'military_id');
+    params.append('fields', 'personal_phone');
+    params.append('fields', 'parents_phone');
+    params.append('print', 'true');
+    
+    window.open('{{ url_for("print_custom") }}?' + params.toString(), '_blank');
+}
+
+function printMedicalCategories() {
+    const params = new URLSearchParams();
+    params.append('fields', 'name');
+    params.append('fields', 'military_id');
+    params.append('fields', 'medical_category');
+    params.append('print', 'true');
+    
+    window.open('{{ url_for("print_custom") }}?' + params.toString(), '_blank');
+}
+
+function printEmergencyList() {
+    const params = new URLSearchParams();
+    params.append('fields', 'name');
+    params.append('fields', 'military_id');
+    params.append('fields', 'personal_phone');
+    params.append('fields', 'parents_phone');
+    params.append('fields', 'residence_city');
+    params.append('fields', 'medical_category');
+    params.append('print', 'true');
+    
+    window.open('{{ url_for("print_custom") }}?' + params.toString(), '_blank');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Συνέντευξη Υπασπιστηρίου - {{ config.APP_NAME or "Military Unit Management" }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">🪖 Διαχείριση Μονάδας</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('soldiers') }}">← Επιστροφή στους Στρατιώτες</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">📝 Συνέντευξη Υπασπιστηρίου - Νέος Στρατιώτης</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('add_soldier_interview') }}" class="needs-validation" novalidate>
+                            <!-- Βασικά Στοιχεία -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5 class="text-primary border-bottom pb-2">Βασικά Στοιχεία</h5>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="name" class="form-label">Ονοματεπώνυμο *</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                    <div class="invalid-feedback">Παρακαλώ εισάγετε το ονοματεπώνυμο.</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="military_id" class="form-label">Στρατιωτικός Αριθμός *</label>
+                                    <input type="text" class="form-control" id="military_id" name="military_id" required>
+                                    <div class="invalid-feedback">Παρακαλώ εισάγετε τον στρατιωτικό αριθμό.</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="enlistment_date" class="form-label">Εγγραφή στο Τάγμα *</label>
+                                    <input type="date" class="form-control" id="enlistment_date" name="enlistment_date" required>
+                                    <div class="invalid-feedback">Παρακαλώ εισάγετε την ημερομηνία εγγραφής.</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="birth_date" class="form-label">Ημερομηνία Γέννησης</label>
+                                    <input type="date" class="form-control" id="birth_date" name="birth_date">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="category" class="form-label">Κατηγορία</label>
+                                    <select class="form-select" id="category" name="category">
+                                        <option value="">Επιλέξτε κατηγορία...</option>
+                                        <option value="ΕΚΠΑΙΔΕΥΟΜΕΝΟΣ">ΕΚΠΑΙΔΕΥΟΜΕΝΟΣ</option>
+                                        <option value="ΟΡΓΑΝΙΚΟΣ">ΟΡΓΑΝΙΚΟΣ</option>
+                                        <option value="ΦΡΟΥΡΑ">ΦΡΟΥΡΑ</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="medical_category" class="form-label">Ιατρική Κατηγορία</label>
+                                    <select class="form-select" id="medical_category" name="medical_category">
+                                        <option value="">Επιλέξτε ιατρική κατηγορία...</option>
+                                        <option value="Ι1">Ι1</option>
+                                        <option value="Ι2">Ι2</option>
+                                        <option value="Ι3 ΕΝΟΠΛΟ">Ι3 ΈΝΟΠΛΟ</option>
+                                        <option value="Ι3 ΑΟΠΛΟ">Ι3 ΆΟΠΛΟ</option>
+                                        <option value="Ι4">Ι4</option>
+                                    </select>
+                                    <div class="form-text">
+                                        <small>
+                                            <strong>Ι1-Ι3 ΈΝΟΠΛΟ:</strong> Κανονικές υπηρεσίες<br>
+                                            <strong>Ι3 ΆΟΠΛΟ:</strong> Υπηρεσίες χωρίς όπλο (Θαλαμοφύλακας, Λάτζα, Μαγειρεία)<br>
+                                            <strong>Ι4:</strong> Δεν κάνει υπηρεσία
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="specialty" class="form-label">Ειδικότητα</label>
+                                    <input type="text" class="form-control" id="specialty" name="specialty">
+                                </div>
+                            </div>
+
+                            <!-- Οικογενειακά Στοιχεία -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5 class="text-primary border-bottom pb-2">Οικογενειακά Στοιχεία</h5>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="father_name" class="form-label">Όνομα Πατρός</label>
+                                    <input type="text" class="form-control" id="father_name" name="father_name">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="mother_name" class="form-label">Όνομα Μητρός</label>
+                                    <input type="text" class="form-control" id="mother_name" name="mother_name">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="father_profession" class="form-label">Επάγγελμα Πατρός</label>
+                                    <input type="text" class="form-control" id="father_profession" name="father_profession">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="mother_profession" class="form-label">Επάγγελμα Μητρός</label>
+                                    <input type="text" class="form-control" id="mother_profession" name="mother_profession">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="profession" class="form-label">Επάγγελμα Στρατιώτη</label>
+                                    <input type="text" class="form-control" id="profession" name="profession">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="brothers_count" class="form-label">Αριθμός Αδελφών (Αγόρια)</label>
+                                    <input type="number" class="form-control" id="brothers_count" name="brothers_count" min="0" value="0">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="sisters_count" class="form-label">Αριθμός Αδελφών (Κορίτσια)</label>
+                                    <input type="number" class="form-control" id="sisters_count" name="sisters_count" min="0" value="0">
+                                </div>
+                            </div>
+
+                            <!-- Στοιχεία Επικοινωνίας & Διαμονής -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5 class="text-primary border-bottom pb-2">Στοιχεία Επικοινωνίας & Διαμονής</h5>
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label for="residence_address" class="form-label">Διεύθυνση Διαμονής</label>
+                                    <input type="text" class="form-control" id="residence_address" name="residence_address">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="residence_city" class="form-label">Πόλη Διαμονής</label>
+                                    <input type="text" class="form-control" id="residence_city" name="residence_city">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="residence_prefecture" class="form-label">Νομός Διαμονής</label>
+                                    <input type="text" class="form-control" id="residence_prefecture" name="residence_prefecture">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="personal_phone" class="form-label">Τηλέφωνο Προσωπικό</label>
+                                    <input type="tel" class="form-control" id="personal_phone" name="personal_phone">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="parents_phone" class="form-label">Τηλέφωνο Γονέων</label>
+                                    <input type="tel" class="form-control" id="parents_phone" name="parents_phone">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" name="email">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="parent_email" class="form-label">Email Γονέα</label>
+                                    <input type="email" class="form-control" id="parent_email" name="parent_email">
+                                </div>
+                            </div>
+
+                            <!-- Εκπαίδευση & Δεξιότητες -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5 class="text-primary border-bottom pb-2">Εκπαίδευση & Δεξιότητες</h5>
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label for="education" class="form-label">Σπουδές</label>
+                                    <textarea class="form-control" id="education" name="education" rows="2"></textarea>
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label for="special_skills" class="form-label">Ειδικές Γνώσεις (π.χ. Ηλεκτρολόγος, Υδραυλικός, Οικοδόμος, Η/Υ, Κουρέας)</label>
+                                    <textarea class="form-control" id="special_skills" name="special_skills" rows="2"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Οικονομικά Στοιχεία -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5 class="text-primary border-bottom pb-2">Οικονομικά Στοιχεία</h5>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="amka" class="form-label">ΑΜΚΑ</label>
+                                    <input type="text" class="form-control" id="amka" name="amka" maxlength="11" pattern="[0-9]{11}">
+                                    <div class="form-text">11 ψηφία</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="tax_number" class="form-label">Αριθμός Φορολογικού Μητρώου</label>
+                                    <input type="text" class="form-control" id="tax_number" name="tax_number">
+                                </div>
+                                <div class="col-md-8 mb-3">
+                                    <label for="iban" class="form-label">ΙΒΑΝ</label>
+                                    <input type="text" class="form-control" id="iban" name="iban" maxlength="27" pattern="[A-Z]{2}[0-9]{25}">
+                                    <div class="form-text">27 χαρακτήρες (2 γράμματα + 25 αριθμοί)</div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="bank" class="form-label">Τράπεζα</label>
+                                    <select class="form-select" id="bank" name="bank">
+                                        <option value="">Επιλέξτε τράπεζα</option>
+                                        <option value="ΕΘΝΙΚΗ">ΕΘΝΙΚΗ</option>
+                                        <option value="ALPHA BANK">ALPHA BANK</option>
+                                        <option value="EUROBANK">EUROBANK</option>
+                                        <option value="PIRAEUS BANK">PIRAEUS BANK</option>
+                                        <option value="ATTICA BANK">ATTICA BANK</option>
+                                        <option value="OPTIMA BANK">OPTIMA BANK</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Παρατηρήσεις -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5 class="text-primary border-bottom pb-2">Παρατηρήσεις</h5>
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label for="interview_notes" class="form-label">Παρατηρήσεις Συνέντευξης</label>
+                                    <textarea class="form-control" id="interview_notes" name="interview_notes" rows="4"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('soldiers') }}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Ακύρωση
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Αποθήκευση Στρατιώτη
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Form validation
+        (function() {
+            'use strict';
+            window.addEventListener('load', function() {
+                var forms = document.getElementsByClassName('needs-validation');
+                var validation = Array.prototype.filter.call(forms, function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+
+        // IBAN validation
+        document.getElementById('iban').addEventListener('input', function(e) {
+            let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            if (value.length === 27) {
+                e.target.classList.remove('is-invalid');
+                e.target.classList.add('is-valid');
+            } else if (value.length > 0) {
+                e.target.classList.remove('is-valid');
+                e.target.classList.add('is-invalid');
+            } else {
+                e.target.classList.remove('is-valid', 'is-invalid');
+            }
+            e.target.value = value;
+        });
+
+        // AMKA validation
+        document.getElementById('amka').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/[^0-9]/g, '');
+            if (value.length === 11) {
+                e.target.classList.remove('is-invalid');
+                e.target.classList.add('is-valid');
+            } else if (value.length > 0) {
+                e.target.classList.remove('is-valid');
+                e.target.classList.add('is-invalid');
+            } else {
+                e.target.classList.remove('is-valid', 'is-invalid');
+            }
+            e.target.value = value;
+        });
+    </script>
+</body>
+</html>

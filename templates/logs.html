@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+
+{% block title %}Αρχείο Δραστηριοτήτων - Στρατιωτική Εφαρμογή{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-history me-2"></i>
+        Αρχείο Δραστηριοτήτων
+    </h1>
+    <div>
+        <button class="btn btn-outline-primary" onclick="refreshLogs()">
+            <i class="fas fa-sync-alt me-1"></i>Ανανέωση
+        </button>
+        <button class="btn btn-outline-secondary" onclick="exportLogs()">
+            <i class="fas fa-download me-1"></i>Εξαγωγή
+        </button>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label for="action_filter" class="form-label">Ενέργεια</label>
+                <select class="form-select" id="action_filter" name="action">
+                    <option value="">Όλες οι Ενέργειες</option>
+                    <option value="login">Σύνδεση</option>
+                    <option value="logout">Αποσύνδεση</option>
+                    <option value="add_soldier">Προσθήκη Στρατιώτη</option>
+                    <option value="edit_soldier">Επεξεργασία Στρατιώτη</option>
+                    <option value="delete_soldier">Διαγραφή Στρατιώτη</option>
+                    <option value="generate_schedule">Δημιουργία Προγράμματος</option>
+                    <option value="clear_schedule">Καθαρισμός Προγράμματος</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="user_filter" class="form-label">Χρήστης</label>
+                <select class="form-select" id="user_filter" name="user">
+                    <option value="">Όλοι οι Χρήστες</option>
+                    <option value="commander">Διοικητής</option>
+                    <option value="staff">Υπασπιστήριο</option>
+                    <option value="audm">ΑΥΔΜ</option>
+                    <option value="archive">Αρχηλόχεια</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="date_from" class="form-label">Από Ημερομηνία</label>
+                <input type="date" class="form-control" id="date_from" name="date_from">
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-filter me-1"></i>Φιλτράρισμα
+                </button>
+                <a href="{{ url_for('view_logs') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Activity Logs -->
+<div class="card">
+    <div class="card-header">
+        <h4 class="mb-0">
+            <i class="fas fa-list me-2"></i>
+            Ιστορικό Δραστηριοτήτων
+        </h4>
+    </div>
+    <div class="card-body p-0">
+        {% if logs.items %}
+            <div class="table-responsive">
+                <table class="table table-hover logs-table mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Ημερομηνία/Ώρα</th>
+                            <th>Χρήστης</th>
+                            <th>Ενέργεια</th>
+                            <th>Στόχος</th>
+                            <th>Περιγραφή</th>
+                            <th>IP Διεύθυνση</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs.items %}
+                        <tr class="log-row" data-action="{{ log.action }}">
+                            <td class="log-timestamp">
+                                <div class="timestamp-container">
+                                    <div class="date">{{ log.timestamp.strftime('%d/%m/%Y') }}</div>
+                                    <div class="time text-muted">{{ log.timestamp.strftime('%H:%M:%S') }}</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="user-info">
+                                    <strong>{{ log.user.full_name }}</strong>
+                                    <div class="username text-muted">{{ log.user.username }}</div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="action-badge badge 
+                                    {% if log.action == 'login' %}bg-success
+                                    {% elif log.action == 'logout' %}bg-secondary
+                                    {% elif 'add' in log.action %}bg-primary
+                                    {% elif 'edit' in log.action %}bg-warning
+                                    {% elif 'delete' in log.action %}bg-danger
+                                    {% elif 'generate' in log.action %}bg-info
+                                    {% else %}bg-light text-dark
+                                    {% endif %}">
+                                    {% if log.action == 'login' %}<i class="fas fa-sign-in-alt me-1"></i>Σύνδεση
+                                    {% elif log.action == 'logout' %}<i class="fas fa-sign-out-alt me-1"></i>Αποσύνδεση
+                                    {% elif 'add_soldier' in log.action %}<i class="fas fa-user-plus me-1"></i>Προσθήκη Στρατιώτη
+                                    {% elif 'edit_soldier' in log.action %}<i class="fas fa-user-edit me-1"></i>Επεξεργασία
+                                    {% elif 'delete_soldier' in log.action %}<i class="fas fa-user-times me-1"></i>Διαγραφή
+                                    {% elif 'generate_schedule' in log.action %}<i class="fas fa-calendar-plus me-1"></i>Δημιουργία Προγράμματος
+                                    {% elif 'clear_schedule' in log.action %}<i class="fas fa-calendar-times me-1"></i>Καθαρισμός
+                                    {% else %}<i class="fas fa-cog me-1"></i>{{ log.action }}
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                {% if log.target_type %}
+                                    <span class="target-info">
+                                        {{ log.target_type }}
+                                        {% if log.target_id %}<code>#{{ log.target_id }}</code>{% endif %}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="description">
+                                    {{ log.description or '-' }}
+                                </div>
+                            </td>
+                            <td>
+                                <code class="ip-address">{{ log.ip_address or '-' }}</code>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if logs.pages > 1 %}
+            <div class="card-footer">
+                <nav aria-label="Σελιδοποίηση αρχείου">
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if logs.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('view_logs', page=logs.prev_num) }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in logs.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != logs.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('view_logs', page=page_num) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if logs.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('view_logs', page=logs.next_num) }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            
+        {% else %}
+            <div class="empty-state">
+                <div class="text-center py-5">
+                    <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Δεν βρέθηκαν δραστηριότητες</h5>
+                    <p class="text-muted">Δεν υπάρχουν καταγεγραμμένες δραστηριότητες για τα επιλεγμένα κριτήρια.</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Summary Stats -->
+{% if logs.items %}
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-primary">{{ logs.total }}</h5>
+                <p class="card-text text-muted">Σύνολο Καταγραφών</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-success">
+                    {% set login_count = namespace(value=0) %}
+                    {% for log in logs.items %}
+                        {% if log.action == 'login' %}
+                            {% set login_count.value = login_count.value + 1 %}
+                        {% endif %}
+                    {% endfor %}
+                    {{ login_count.value }}
+                </h5>
+                <p class="card-text text-muted">Συνδέσεις</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-info">
+                    {% set soldier_count = namespace(value=0) %}
+                    {% for log in logs.items %}
+                        {% if 'soldier' in log.action %}
+                            {% set soldier_count.value = soldier_count.value + 1 %}
+                        {% endif %}
+                    {% endfor %}
+                    {{ soldier_count.value }}
+                </h5>
+                <p class="card-text text-muted">Ενέργειες Στρατιωτών</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-warning">
+                    {% set schedule_count = namespace(value=0) %}
+                    {% for log in logs.items %}
+                        {% if 'schedule' in log.action %}
+                            {% set schedule_count.value = schedule_count.value + 1 %}
+                        {% endif %}
+                    {% endfor %}
+                    {{ schedule_count.value }}
+                </h5>
+                <p class="card-text text-muted">Ενέργειες Προγράμματος</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function refreshLogs() {
+    window.location.reload();
+}
+
+function exportLogs() {
+    // Create a CSV export of the current logs
+    const table = document.querySelector('.logs-table');
+    if (!table) return;
+    
+    let csv = 'Ημερομηνία,Χρήστης,Ενέργεια,Στόχος,Περιγραφή,IP\n';
+    
+    table.querySelectorAll('tbody tr').forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const rowData = [];
+        
+        // Date/Time
+        const dateEl = cells[0].querySelector('.date');
+        const timeEl = cells[0].querySelector('.time');
+        rowData.push(`"${dateEl.textContent} ${timeEl.textContent}"`);
+        
+        // User
+        const userEl = cells[1].querySelector('strong');
+        rowData.push(`"${userEl.textContent}"`);
+        
+        // Action
+        const actionEl = cells[2].querySelector('.action-badge');
+        rowData.push(`"${actionEl.textContent.trim()}"`);
+        
+        // Target
+        const targetEl = cells[3].querySelector('.target-info') || cells[3];
+        rowData.push(`"${targetEl.textContent.trim()}"`);
+        
+        // Description
+        const descEl = cells[4].querySelector('.description');
+        rowData.push(`"${descEl.textContent.trim()}"`);
+        
+        // IP
+        const ipEl = cells[5].querySelector('.ip-address');
+        rowData.push(`"${ipEl.textContent.trim()}"`);
+        
+        csv += rowData.join(',') + '\n';
+    });
+    
+    // Download CSV
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `activity_logs_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+// Set today's date as default for date filter
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.getElementById('date_from');
+    if (dateInput && !dateInput.value) {
+        const today = new Date();
+        today.setDate(today.getDate() - 7); // Default to last week
+        dateInput.value = today.toISOString().split('T')[0];
+    }
+});
+</script>
+
+<style>
+.logs-table {
+    font-size: 0.9rem;
+}
+
+.timestamp-container .date {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.timestamp-container .time {
+    font-size: 0.8rem;
+}
+
+.user-info strong {
+    font-size: 0.9rem;
+}
+
+.user-info .username {
+    font-size: 0.8rem;
+}
+
+.action-badge {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+}
+
+.target-info code {
+    font-size: 0.7rem;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+}
+
+.description {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ip-address {
+    font-size: 0.8rem;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+}
+
+.log-row:hover {
+    background-color: rgba(30, 64, 175, 0.05);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Στρατιώτες - Στρατιωτική Εφαρμογή{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-users me-2"></i>
+        Διαχείριση Στρατιωτών
+    </h1>
+    <a href="{{ url_for('add_soldier') }}" class="btn btn-primary">
+        <i class="fas fa-user-plus me-1"></i>Προσθήκη Στρατιώτη
+    </a>
+</div>
+
+<!-- Search and Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label for="search" class="form-label">Αναζήτηση</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search }}" placeholder="Όνομα, Αριθμός, Ειδικότητα...">
+            </div>
+            <div class="col-md-3">
+                <label for="status" class="form-label">Κατάσταση</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">Όλες οι Καταστάσεις</option>
+                    <option value="Active" {{ 'selected' if status_filter == 'Active' }}>Ενεργός</option>
+                    <option value="On Leave" {{ 'selected' if status_filter == 'On Leave' }}>Εκτός Υπηρεσίας</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-search me-1"></i>Αναζήτηση
+                </button>
+                <a href="{{ url_for('soldiers') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Soldiers Table -->
+<div class="card">
+    <div class="card-body">
+        {% if soldiers %}
+            <div class="table-responsive">
+                <table class="table table-hover soldiers-table">
+                    <thead>
+                        <tr>
+                            <th>Όνομα</th>
+                            <th>Στρατιωτικός Αριθμός</th>
+                            <th>Υπηρεσίες</th>
+                            <th>ΕΥ (Μέρες)</th>
+                            <th>Κατάσταση</th>
+                            <th>Εξαιρέσεις</th>
+                            <th>Ενέργειες</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for soldier in soldiers %}
+                        <tr>
+                            <td>
+                                <strong>{{ soldier.name }}</strong>
+                                <div class="text-muted small">{{ soldier.specialty or '-' }}</div>
+                            </td>
+                            <td>{{ soldier.military_id }}</td>
+                            <td>
+                                {% set duty_counts = soldier.get_duty_counts_by_type() %}
+                                {% set total_duties = soldier.get_total_finalized_duties() %}
+                                <div class="duty-summary">
+                                    <strong>Σύνολο: {{ total_duties }}</strong>
+                                    {% if duty_counts %}
+                                        <div class="duty-breakdown">
+                                            {% for duty_type, count in duty_counts.items() %}
+                                                <span class="badge bg-info me-1">{{ duty_type }}({{ count }})</span>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="ey-status">
+                                    {% if soldier.days_out_of_service > 0 %}
+                                        <span class="badge bg-warning">{{ soldier.days_out_of_service }} μέρες</span>
+                                        {% if soldier.out_of_service_reason %}
+                                            <div class="text-muted small">{{ soldier.out_of_service_reason }}</div>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-success">0 μέρες</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if soldier.status == 'Active' %}
+                                    <span class="badge bg-success">Ενεργός</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Εκτός Υπηρεσίας</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="exemptions">
+                                    {% if soldier.exemption_no_duty %}
+                                        <span class="badge bg-danger me-1">Άνευ υπηρεσίας</span>
+                                    {% endif %}
+                                    {% if soldier.exemption_no_shaving %}
+                                        <span class="badge bg-info me-1">Άνευ ξυρίσματος</span>
+                                    {% endif %}
+                                    {% if soldier.exemption_no_boots %}
+                                        <span class="badge bg-secondary me-1">Άνευ αρβυλών</span>
+                                    {% endif %}
+                                    {% if not soldier.exemption_no_duty and not soldier.exemption_no_shaving and not soldier.exemption_no_boots %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('soldier_profile', soldier_id=soldier.id) }}" 
+                                       class="btn btn-sm btn-outline-success" title="Προφίλ & Συνέντευξη">
+                                        <i class="fas fa-user"></i>
+                                    </a>
+                                    <a href="{{ url_for('soldier_history', soldier_id=soldier.id) }}" 
+                                       class="btn btn-sm btn-outline-info" title="Ιστορικό Υπηρεσιών">
+                                        <i class="fas fa-history"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-warning" 
+                                            onclick="openEYModal({{ soldier.id }}, '{{ soldier.name }}', {{ soldier.days_out_of_service }}, '{{ soldier.out_of_service_reason or '' }}')" 
+                                            title="Διαχείριση ΕΥ">
+                                        <i class="fas fa-calendar-times"></i>
+                                    </button>
+                                    <a href="{{ url_for('edit_soldier', soldier_id=soldier.id) }}" 
+                                       class="btn btn-sm btn-outline-primary" title="Επεξεργασία">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                            onclick="deleteSoldier({{ soldier.id }}, '{{ soldier.name }}')" title="Διαγραφή">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Δεν βρέθηκαν στρατιώτες</h5>
+                    {% if search or status_filter %}
+                        <p class="text-muted">Δοκιμάστε να αλλάξετε τα κριτήρια αναζήτησης σας.</p>
+                        <a href="{{ url_for('soldiers') }}" class="btn btn-outline-secondary me-2">
+                            <i class="fas fa-times me-1"></i>Καθαρισμός Φίλτρων
+                        </a>
+                    {% else %}
+                        <p class="text-muted">Προσθέστε τον πρώτο στρατιώτη για να ξεκινήσετε.</p>
+                    {% endif %}
+                    <a href="{{ url_for('add_soldier') }}" class="btn btn-primary">
+                        <i class="fas fa-user-plus me-1"></i>Προσθήκη Στρατιώτη
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Επιβεβαίωση Διαγραφής</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Είστε σίγουροι ότι θέλετε να διαγράψετε τον στρατιώτη <strong id="soldierName"></strong>;</p>
+                <p class="text-danger">Αυτή η ενέργεια δεν μπορεί να αναιρεθεί και θα διαγραφούν όλα τα στοιχεία υπηρεσιών.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ακύρωση</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>Διαγραφή
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ΕΥ Management Modal -->
+<div class="modal fade" id="eyModal" tabindex="-1" aria-labelledby="eyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eyModalLabel">Διαχείριση ΕΥ (Εκτός Υπηρεσίας)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="eyForm" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="soldierName" class="form-label">Στρατιώτης</label>
+                        <input type="text" class="form-control" id="soldierName" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="daysOutOfService" class="form-label">Μέρες ΕΥ</label>
+                        <input type="number" class="form-control" id="daysOutOfService" name="days_out_of_service" min="0" required>
+                        <div class="form-text">Αριθμός ημερών που ο στρατιώτης είναι εκτός υπηρεσίας</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="outOfServiceReason" class="form-label">Λόγος ΕΥ</label>
+                        <input type="text" class="form-control" id="outOfServiceReason" name="out_of_service_reason" maxlength="200">
+                        <div class="form-text">Προαιρετικός λόγος για την κατάσταση ΕΥ</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Άκυρο</button>
+                    <button type="submit" class="btn btn-primary">Αποθήκευση</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function openEYModal(soldierId, soldierName, currentDays, currentReason) {
+    document.getElementById('soldierName').value = soldierName;
+    document.getElementById('daysOutOfService').value = currentDays;
+    document.getElementById('outOfServiceReason').value = currentReason;
+    document.getElementById('eyForm').action = `/soldiers/${soldierId}/update_ey`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('eyModal'));
+    modal.show();
+}
+</script>
+<script>
+function deleteSoldier(soldierId, soldierName) {
+    document.getElementById('soldierName').textContent = soldierName;
+    document.getElementById('deleteForm').action = '/soldiers/' + soldierId + '/delete';
+    
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,100 @@
+
+{% extends "base.html" %}
+
+{% block title %}Νέα Άδεια - Στρατιωτική Εφαρμογή{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-calendar-plus me-2"></i>
+        Νέα Άδεια
+    </h1>
+    <a href="{{ url_for('leaves') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Πίσω
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" class="needs-validation" novalidate>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="soldier_id" class="form-label">Στρατιώτης *</label>
+                    <select class="form-select" id="soldier_id" name="soldier_id" required>
+                        <option value="">Επιλέξτε στρατιώτη</option>
+                        {% for soldier in soldiers %}
+                        <option value="{{ soldier.id }}">{{ soldier.name }} ({{ soldier.military_id }})</option>
+                        {% endfor %}
+                    </select>
+                    <div class="invalid-feedback">Παρακαλώ επιλέξτε στρατιώτη.</div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="leave_type" class="form-label">Τύπος Άδειας *</label>
+                    <select class="form-select" id="leave_type" name="leave_type" required>
+                        <option value="">Επιλέξτε τύπο</option>
+                        <option value="Κανονική">Κανονική</option>
+                        <option value="Ασθένεια">Ασθένεια</option>
+                        <option value="Εκτακτη">Έκτακτη</option>
+                        <option value="Γάμος">Γάμος</option>
+                        <option value="Κηδεία">Κηδεία</option>
+                        <option value="Εξετάσεις">Εξετάσεις</option>
+                        <option value="Άλλο">Άλλο</option>
+                    </select>
+                    <div class="invalid-feedback">Παρακαλώ επιλέξτε τύπο άδειας.</div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="start_date" class="form-label">Ημερομηνία Έναρξης *</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" required>
+                    <div class="invalid-feedback">Παρακαλώ επιλέξτε ημερομηνία έναρξης.</div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="end_date" class="form-label">Ημερομηνία Λήξης *</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" required>
+                    <div class="invalid-feedback">Παρακαλώ επιλέξτε ημερομηνία λήξης.</div>
+                </div>
+                
+                <div class="col-12 mb-3">
+                    <label for="reason" class="form-label">Λόγος Άδειας</label>
+                    <textarea class="form-control" id="reason" name="reason" rows="3" 
+                              placeholder="Περιγράψτε τον λόγο της άδειας..."></textarea>
+                </div>
+                
+                <div class="col-12 mb-3">
+                    <label for="notes" class="form-label">Σημειώσεις</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="3" 
+                              placeholder="Επιπλέον σημειώσεις..."></textarea>
+                </div>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{{ url_for('leaves') }}" class="btn btn-secondary me-md-2">Ακύρωση</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i>Αποθήκευση
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Calculate days automatically
+document.getElementById('start_date').addEventListener('change', calculateDays);
+document.getElementById('end_date').addEventListener('change', calculateDays);
+
+function calculateDays() {
+    const startDate = new Date(document.getElementById('start_date').value);
+    const endDate = new Date(document.getElementById('end_date').value);
+    
+    if (startDate && endDate && endDate >= startDate) {
+        const diffTime = Math.abs(endDate - startDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        
+        // Show calculated days (you can add a display element if needed)
+        console.log('Calculated days:', diffDays);
+    }
+}
+</script>
+{% endblock %}
