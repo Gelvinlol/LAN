@@ -5,7 +5,14 @@ from models import Soldier, DutyType, DutyAssignment, DutyTimeSlot, DutySchedule
 from simple_scheduler import SimpleScheduler
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash
+from urllib.parse import urljoin, urlparse
 import logging
+
+
+def is_safe_redirect(target):
+    host_url = urlparse(request.host_url)
+    redirect_url = urlparse(urljoin(request.host_url, target))
+    return redirect_url.scheme in ("http", "https") and host_url.netloc == redirect_url.netloc
 
 def log_activity(action, target_type=None, target_id=None, description=None):
     """Log user activity"""
@@ -29,7 +36,7 @@ def login():
         
         user = User.query.filter_by(username=username).first()
         
-        if user and user.check_password(password):
+        if user and user.is_active and user.check_password(password):
             login_user(user)
             user.last_login = datetime.utcnow()
             db.session.commit()
@@ -38,7 +45,7 @@ def login():
             
             next_page = request.args.get('next')
             flash(f'Καλώς ήρθατε, {user.full_name}!', 'success')
-            return redirect(next_page) if next_page else redirect(url_for('index'))
+            return redirect(next_page) if next_page and is_safe_redirect(next_page) else redirect(url_for('index'))
         else:
             flash('Λανθασμένα στοιχεία σύνδεσης.', 'error')
     
@@ -218,6 +225,7 @@ def add_soldier_interview():
         return render_template('soldier_interview.html')
 
 @app.route('/soldiers/<int:soldier_id>/edit', methods=['GET', 'POST'])
+@login_required
 def edit_soldier(soldier_id):
     soldier = Soldier.query.get_or_404(soldier_id)
     
@@ -244,6 +252,7 @@ def edit_soldier(soldier_id):
     return render_template('edit_soldier.html', soldier=soldier)
 
 @app.route('/soldiers/<int:soldier_id>/delete', methods=['POST'])
+@login_required
 def delete_soldier(soldier_id):
     soldier = Soldier.query.get_or_404(soldier_id)
     try:
@@ -300,7 +309,7 @@ def soldier_profile(soldier_id):
 @app.route('/schedule/edit_assignment/<int:assignment_id>', methods=['POST'])
 @login_required
 def edit_assignment(assignment_id):
-    assignment = DutyAssignment.query.get_or_404(assignment_id)
+    assignment = db.get_or_404(DutyAssignment, assignment_id)
     
     # Debug logging
     print(f"DEBUG: Editing assignment {assignment_id}")
@@ -320,15 +329,32 @@ def edit_assignment(assignment_id):
             return redirect(url_for('schedule', date=assignment.duty_date.strftime('%Y-%m-%d')))
             
         new_soldier_id = int(new_soldier_id_str)
-        new_soldier = Soldier.query.get_or_404(new_soldier_id)
+        new_soldier = db.get_or_404(Soldier, new_soldier_id)
         
         # Check if it's actually a different soldier
         if assignment.soldier_id == new_soldier_id:
             flash('Same soldier selected - no change needed', 'info')
             return redirect(url_for('schedule', date=assignment.duty_date.strftime('%Y-%m-%d')))
+
+        existing_assignment = DutyAssignment.query.filter(
+            DutyAssignment.duty_date == assignment.duty_date,
+            DutyAssignment.soldier_id == new_soldier_id,
+            DutyAssignment.id != assignment.id,
+        ).first()
+        if existing_assignment:
+            flash(
+                f'Ο {new_soldier.name} έχει ήδη τοποθετηθεί στην υπηρεσία '
+                f'{existing_assignment.duty_type.name} για αυτή την ημερομηνία.',
+                'error',
+            )
+            return redirect(url_for('schedule', date=assignment.duty_date.strftime('%Y-%m-%d')))
         
         old_soldier_name = assignment.soldier.name
         assignment.soldier_id = new_soldier_id
+        assignment.notes = (
+            f'Χειροκίνητη αλλαγή από {current_user.full_name} '
+            f'({current_user.username}): {old_soldier_name} → {new_soldier.name}'
+        )
         
         db.session.commit()
         
@@ -345,6 +371,7 @@ def edit_assignment(assignment_id):
     return redirect(url_for('schedule', date=assignment.duty_date.strftime('%Y-%m-%d')))
 
 @app.route('/duties')
+@login_required
 def duties():
     duty_types = DutyType.query.filter_by(is_active=True).all()
     return render_template('duties.html', duty_types=duty_types)
@@ -411,6 +438,7 @@ def edit_duty_type():
     return redirect(url_for('duties'))
 
 @app.route('/duties/add', methods=['POST'])
+@login_required
 def add_duty_type():
     try:
         duty_type = DutyType(
@@ -460,6 +488,7 @@ def add_duty_type():
     return redirect(url_for('duties'))
 
 @app.route('/schedule')
+@login_required
 def schedule():
     selected_date = request.args.get('date')
     if selected_date:
@@ -484,14 +513,19 @@ def schedule():
     
     # Get all available soldiers for dropdown (when editing assignments)
     available_soldiers = Soldier.query.filter_by(status='Active').order_by(Soldier.name).all()
+    assigned_soldier_ids = {
+        assignment.soldier_id for assignment, _, _ in assignments
+    }
     
     return render_template('schedule.html', 
                          assignments=assignments, 
                          schedule_date=schedule_date,
                          schedule_obj=schedule_obj,
-                         available_soldiers=available_soldiers)
+                         available_soldiers=available_soldiers,
+                         assigned_soldier_ids=assigned_soldier_ids)
 
 @app.route('/schedule/generate', methods=['POST'])
+@login_required
 def generate_schedule():
     selected_date = request.form.get('date')
     if selected_date:
@@ -512,7 +546,11 @@ def generate_schedule():
                         f'Generated schedule for {schedule_date.strftime("%d/%m/%Y")}')
             flash(f'Schedule generated successfully for {schedule_date}!', 'success')
         else:
-            flash('Failed to generate complete schedule. Check soldier availability.', 'warning')
+            flash(
+                'Το πρόγραμμα δημιουργήθηκε με κενές θέσεις επειδή δεν υπάρχουν '
+                'αρκετά διαθέσιμα άτομα χωρίς δεύτερη υπηρεσία την ίδια ημέρα.',
+                'warning',
+            )
             
     except Exception as e:
         flash(f'Error generating schedule: {str(e)}', 'error')
@@ -587,6 +625,7 @@ def clear_schedule():
     return redirect(url_for('schedule', date=schedule_date.strftime('%Y-%m-%d')))
 
 @app.route('/duty_sheet')
+@login_required
 def duty_sheet():
     selected_date = request.args.get('date')
     if selected_date:
@@ -632,6 +671,7 @@ def duty_sheet():
                          print_mode=request.args.get('print') == 'true')
 
 @app.route('/duty_sheet/print')
+@login_required
 def print_duty_sheet():
     selected_date = request.args.get('date', date.today().strftime('%Y-%m-%d'))
     return redirect(url_for('duty_sheet', date=selected_date, print='true'))

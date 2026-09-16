@@ -3,99 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Σύνδεση - Στρατιωτική Εφαρμογή</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome Icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Custom CSS -->
+    <meta name="theme-color" content="#10140f">
+    <title>Πύλη Πρόσβασης | Σύστημα Διοίκησης Μονάδας</title>
     <link href="{{ url_for('static', filename='css/login.css') }}" rel="stylesheet">
 </head>
 <body class="login-body">
-    <div class="login-container">
-        <div class="login-card">
-            <div class="login-header">
-                <div class="logo-container">
-                    <i class="fas fa-shield-alt"></i>
-                </div>
-                <h1>Στρατιωτική Εφαρμογή</h1>
-                <p>Σύστημα Διαχείρισης Μονάδας</p>
-            </div>
-            
-            <!-- Flash Messages -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            
-            <form method="POST" class="login-form">
-                <div class="form-group">
-                    <label for="username" class="form-label">
-                        <i class="fas fa-user me-2"></i>Όνομα Χρήστη
-                    </label>
-                    <input type="text" class="form-control" id="username" name="username" required 
-                           placeholder="Εισάγετε το όνομα χρήστη σας">
-                </div>
-                
-                <div class="form-group">
-                    <label for="password" class="form-label">
-                        <i class="fas fa-lock me-2"></i>Κωδικός Πρόσβασης
-                    </label>
-                    <input type="password" class="form-control" id="password" name="password" required 
-                           placeholder="Εισάγετε τον κωδικό σας">
-                </div>
-                
-                <button type="submit" class="btn btn-primary login-btn">
-                    <i class="fas fa-sign-in-alt me-2"></i>Σύνδεση
-                </button>
-            </form>
-            
-            <div class="login-info">
-                <h6>Στοιχεία Σύνδεσης:</h6>
-                <div class="credentials-grid">
-                    <div class="credential-item">
-                        <strong>Διοικητής:</strong> commander / commander123
-                    </div>
-                    <div class="credential-item">
-                        <strong>Υπασπιστήριο:</strong> staff / staff123
-                    </div>
-                    <div class="credential-item">
-                        <strong>ΑΥΔΜ:</strong> audm / audm123
-                    </div>
-                    <div class="credential-item">
-                        <strong>Αρχηλόχεια:</strong> archive / archive123
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="login-footer">
-            <p>&copy; 2024 Στρατιωτική Εφαρμογή - Συνδεδεμένο Δίκτυο (LAN)</p>
-        </div>
-    </div>
+    <div class="tactical-grid" aria-hidden="true"></div>
+    <div class="scan-line" aria-hidden="true"></div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+    <header class="classification-bar">
+        <span>ΕΛΕΓΧΟΜΕΝΗ ΠΡΟΣΒΑΣΗ</span>
+        <span class="classification-center">ΣΔΜ // LAN</span>
+        <span>ΕΞΟΥΣΙΟΔΟΤΗΜΕΝΟ ΠΡΟΣΩΠΙΚΟ</span>
+    </header>
+
+    <main class="login-shell">
+        <section class="mission-panel" aria-labelledby="system-title">
+            <div class="corner-mark corner-mark--top" aria-hidden="true"></div>
+            <div class="corner-mark corner-mark--bottom" aria-hidden="true"></div>
+
+            <div class="unit-mark" aria-hidden="true">
+                <svg viewBox="0 0 96 112" role="img">
+                    <path class="shield" d="M48 4 88 18v34c0 26-16 45-40 56C24 97 8 78 8 52V18L48 4Z"/>
+                    <path class="shield-inner" d="M48 14 78 25v27c0 19-11 34-30 45-19-11-30-26-30-45V25L48 14Z"/>
+                    <path class="spear" d="m48 25 5 13-5 29-5-29 5-13Z"/>
+                    <path class="wings" d="M25 45h17l6 8 6-8h17l-12 11H37L25 45Z"/>
+                    <circle class="unit-dot" cx="48" cy="75" r="4"/>
+                </svg>
+                <span class="unit-code">ΜΟΝΑΔΑ // 01</span>
+            </div>
+
+            <div class="mission-copy">
+                <p class="eyebrow"><span></span> ΚΕΝΤΡΟ ΕΠΙΧΕΙΡΗΣΕΩΝ</p>
+                <h1 id="system-title">Επιχειρησιακή<br><strong>Ετοιμότητα.</strong></h1>
+                <p class="mission-lead">Ενιαίο σύστημα διαχείρισης προσωπικού, υπηρεσιών και μέσων της μονάδας.</p>
+            </div>
+
+            <dl class="system-status" aria-label="Κατάσταση συστήματος">
+                <div>
+                    <dt><span class="status-light"></span> Κατάσταση</dt>
+                    <dd>Ενεργό</dd>
+                </div>
+                <div>
+                    <dt>Περιβάλλον</dt>
+                    <dd>Τοπικό Δίκτυο</dd>
+                </div>
+                <div>
+                    <dt>Κανάλι</dt>
+                    <dd>LAN / 01</dd>
+                </div>
+            </dl>
+
+            <div class="coordinate-line" aria-hidden="true">
+                <span>GRID REF // LOCAL</span>
+                <span>ZONE // INTERNAL</span>
+                <span>AUTH NODE 01</span>
+            </div>
+        </section>
+
+        <section class="access-panel" aria-labelledby="access-title">
+            <div class="access-inner">
+                <div class="access-heading">
+                    <div>
+                        <p class="section-code">ΠΥΛΗ ΠΡΟΣΒΑΣΗΣ / 01</p>
+                        <h2 id="access-title">Αναγνώριση Χρήστη</h2>
+                    </div>
+                    <div class="access-badge" aria-label="Περιορισμένη πρόσβαση">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M7 10V7a5 5 0 0 1 10 0v3m-9 0h8a2 2 0 0 1 2 2v7H6v-7a2 2 0 0 1 2-2Z"/>
+                        </svg>
+                        RESTRICTED
+                    </div>
+                </div>
+
+                <p class="access-intro">Εισάγετε τα διαπιστευτήριά σας για να συνεχίσετε στο σύστημα διοίκησης.</p>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="alerts" aria-live="polite">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else category }}">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M12 8v5m0 3h.01M10.3 3.8 2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z"/>
+                                    </svg>
+                                    <span>{{ message }}</span>
+                                    <button type="button" class="alert-close" aria-label="Κλείσιμο">×</button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" class="login-form" id="login-form">
+                    <div class="field-group">
+                        <label for="username">
+                            <span>ΑΝΑΓΝΩΡΙΣΤΙΚΟ ΧΡΗΣΤΗ</span>
+                            <small>01</small>
+                        </label>
+                        <div class="field-control">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M19 21a7 7 0 0 0-14 0m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/>
+                            </svg>
+                            <input type="text" id="username" name="username" required autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Όνομα χρήστη">
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="password">
+                            <span>ΚΩΔΙΚΟΣ ΠΡΟΣΒΑΣΗΣ</span>
+                            <small>02</small>
+                        </label>
+                        <div class="field-control">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M7 10V7a5 5 0 0 1 10 0v3M6 10h12v11H6V10Z"/>
+                            </svg>
+                            <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="••••••••••••">
+                            <button type="button" class="password-toggle" aria-label="Εμφάνιση κωδικού" aria-pressed="false">
+                                <svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="login-btn">
+                        <span class="button-index">03</span>
+                        <span class="button-label">ΕΙΣΟΔΟΣ ΣΤΟ ΣΥΣΤΗΜΑ</span>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>
+                    </button>
+                </form>
+
+                <div class="security-note">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v5c0 5 3.2 8.5 8 10 4.8-1.5 8-5 8-10V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+                    <p><strong>Εξουσιοδοτημένη χρήση μόνο.</strong><br>Οι ενέργειες χρηστών καταγράφονται από το σύστημα.</p>
+                </div>
+            </div>
+
+            <footer class="panel-footer">
+                <span>ΣΔΜ v0.1</span>
+                <span class="footer-clock" id="system-clock">--:--:--</span>
+                <span>NODE ONLINE <i></i></span>
+            </footer>
+        </section>
+    </main>
+
+    <footer class="page-footer">
+        <span>ΣΥΣΤΗΜΑ ΔΙΑΧΕΙΡΙΣΗΣ ΜΟΝΑΔΑΣ</span>
+        <span>© 2026 // ΕΣΩΤΕΡΙΚΟ ΔΙΚΤΥΟ</span>
+    </footer>
+
     <script>
-        // Auto-focus on username field
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('username').focus();
+        const username = document.getElementById('username');
+        const password = document.getElementById('password');
+        const toggle = document.querySelector('.password-toggle');
+        const form = document.getElementById('login-form');
+        const clock = document.getElementById('system-clock');
+
+        username.focus();
+
+        toggle.addEventListener('click', () => {
+            const reveal = password.type === 'password';
+            password.type = reveal ? 'text' : 'password';
+            toggle.setAttribute('aria-pressed', reveal.toString());
+            toggle.setAttribute('aria-label', reveal ? 'Απόκρυψη κωδικού' : 'Εμφάνιση κωδικού');
         });
-        
-        // Enter key submission
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                document.querySelector('.login-form').submit();
-            }
+
+        document.querySelectorAll('.alert-close').forEach((button) => {
+            button.addEventListener('click', () => button.closest('.alert').remove());
         });
+
+        form.addEventListener('submit', () => {
+            const button = form.querySelector('.login-btn');
+            button.classList.add('is-loading');
+            button.querySelector('.button-label').textContent = 'ΕΛΕΓΧΟΣ ΣΤΟΙΧΕΙΩΝ...';
+        });
+
+        const updateClock = () => {
+            clock.textContent = new Intl.DateTimeFormat('el-GR', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+            }).format(new Date());
+        };
+        updateClock();
+        window.setInterval(updateClock, 1000);
     </script>
 </body>
 </html>

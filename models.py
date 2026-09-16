@@ -12,6 +12,10 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
     active = db.Column(db.Boolean, default=True)
+
+    @property
+    def is_active(self):
+        return bool(self.active)
     
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
@@ -114,12 +118,15 @@ class Soldier(db.Model):
         return self.medical_category in ['Ι1', 'Ι2', 'Ι3 ΕΝΟΠΛΟ', 'Ι3 ΑΟΠΛΟ']
     
     def get_duty_count_last_days(self, days=7):
-        """Get number of duties in the last N days"""
+        """Get finalized duties in the last N days; drafts never count."""
         from datetime import datetime, timedelta
         cutoff_date = datetime.utcnow() - timedelta(days=days)
-        return DutyAssignment.query.filter(
+        return db.session.query(DutyAssignment).join(
+            DutySchedule, DutySchedule.schedule_date == DutyAssignment.duty_date
+        ).filter(
             DutyAssignment.soldier_id == self.id,
-            DutyAssignment.duty_date >= cutoff_date
+            DutyAssignment.duty_date >= cutoff_date.date(),
+            DutySchedule.is_finalized.is_(True),
         ).count()
     
     def get_duty_counts_by_type(self):
@@ -197,6 +204,12 @@ class DutyTimeSlot(db.Model):
         return f'<DutyTimeSlot {self.duty_type.name} Shift {self.shift_number}>'
 
 class DutyAssignment(db.Model):
+    __table_args__ = (
+        db.UniqueConstraint(
+            'soldier_id', 'duty_date', name='uq_duty_assignment_soldier_date'
+        ),
+    )
+
     id = db.Column(db.Integer, primary_key=True)
     soldier_id = db.Column(db.Integer, db.ForeignKey('soldier.id'), nullable=False)
     duty_type_id = db.Column(db.Integer, db.ForeignKey('duty_type.id'), nullable=False)

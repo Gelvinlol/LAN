@@ -6,19 +6,219 @@
 {% if print_mode %}
 <style>
     @media print {
+        html, body {
+            width: 100%;
+            height: auto;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            font-family: Arial, sans-serif;
+            font-size: 7pt;
+        }
+
         .no-print { display: none !important; }
-        .container-fluid { margin: 0; padding: 0; }
-        .card { border: none; box-shadow: none; }
-        .card-header { background: none !important; }
-        body { font-size: 12px; }
-        h1, h2, h3, h4, h5 { color: black !important; }
-        .table th { background-color: #f8f9fa !important; }
-        .badge { border: 1px solid #000; }
+        .container-fluid, .app-main {
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .duty-sheet-document {
+            width: 100% !important;
+            margin: 0 !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            overflow: visible !important;
+        }
+
+        .duty-sheet-document > .card-header {
+            min-height: 0 !important;
+            display: block !important;
+            padding: 0 0 2mm !important;
+            border: 0 !important;
+            border-bottom: 0.4mm solid #374234 !important;
+            color: #111 !important;
+            background: white !important;
+        }
+
+        .duty-sheet-document > .card-header h2 {
+            margin: 0 !important;
+            color: #111 !important;
+            font-size: 13pt !important;
+            line-height: 1.05;
+            letter-spacing: 0.08em;
+        }
+
+        .duty-sheet-document > .card-header h4 {
+            margin: 0.7mm 0 0 !important;
+            color: #444 !important;
+            font-size: 7.5pt !important;
+            line-height: 1;
+        }
+
+        .duty-sheet-document > .card-body {
+            padding: 2mm 0 0 !important;
+        }
+
+        .duty-section {
+            margin: 0 0 1.5mm !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        .duty-title {
+            margin: 0 !important;
+            padding: 0.8mm 1.5mm !important;
+            border: 0.25mm solid #7b8377 !important;
+            border-bottom: 0 !important;
+            color: #182016 !important;
+            background: #e9ece5 !important;
+            font-size: 7pt !important;
+            line-height: 1.05;
+        }
+
+        .duty-title i { display: none !important; }
+        .table-responsive { overflow: visible !important; }
+
+        .duty-sheet-table {
+            width: 100% !important;
+            margin: 0 !important;
+            border: 0.25mm solid #7b8377 !important;
+            border-collapse: collapse !important;
+            table-layout: fixed;
+            font-size: 6.2pt !important;
+            line-height: 1.05;
+        }
+
+        .duty-sheet-table thead { display: table-header-group; }
+        .duty-sheet-table tr {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        .duty-sheet-table th,
+        .duty-sheet-table td {
+            height: 3.5mm;
+            padding: 0.45mm 1mm !important;
+            border: 0.2mm solid #aeb3aa !important;
+            color: #111 !important;
+            vertical-align: middle !important;
+        }
+
+        .duty-sheet-table th {
+            background: #f2f3ef !important;
+            font-size: 5.5pt !important;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .duty-sheet-table th:nth-child(1) { width: 7%; }
+        .duty-sheet-table th:nth-child(2) { width: 15%; }
+        .duty-sheet-table th:nth-child(3) { width: 25%; }
+        .duty-sheet-table th:nth-child(4) { width: 17%; }
+        .duty-sheet-table th:nth-child(5) { width: 7%; }
+        .duty-sheet-table th:nth-child(6) { width: 29%; }
+        .signature-cell { height: 3.5mm !important; }
+
+        .signature-section {
+            margin: 2mm 0 0 !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        .signature-section .row {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 3mm;
+            margin: 0 !important;
+        }
+
+        .signature-section .col-md-6 {
+            width: auto !important;
+            padding: 0 !important;
+        }
+
+        .signature-box {
+            min-height: 12mm;
+            padding: 1.5mm 2mm !important;
+            border: 0.25mm solid #9ca198 !important;
+            border-radius: 0 !important;
+            background: white !important;
+            font-size: 6pt;
+        }
+
+        .signature-box p { margin: 0 !important; }
+        .signature-line {
+            height: 4mm !important;
+            margin: 0.5mm 0 !important;
+            border-bottom: 0.2mm solid #333 !important;
+            color: transparent;
+        }
+
+        .notes-section {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            align-items: start;
+            gap: 2mm;
+            margin: 1.5mm 0 0 !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        .notes-section h5 {
+            margin: 0 !important;
+            color: #111 !important;
+            font-size: 6pt !important;
+        }
+
+        .notes-lines { display: grid; gap: 0.5mm; }
+        .note-line {
+            height: 2.5mm !important;
+            margin: 0 !important;
+            border-bottom: 0.2mm solid #aaa !important;
+            color: transparent;
+            font-size: 1pt;
+            line-height: 1;
+        }
+
+        .note-line:nth-child(n+3) { display: none !important; }
+
+        .duty-sheet-document.density-compact .duty-section {
+            margin-bottom: 0.9mm !important;
+        }
+
+        .duty-sheet-document.density-compact .duty-title {
+            padding: 0.55mm 1.2mm !important;
+            font-size: 6.2pt !important;
+        }
+
+        .duty-sheet-document.density-compact .duty-sheet-table {
+            font-size: 5.5pt !important;
+        }
+
+        .duty-sheet-document.density-compact .duty-sheet-table th,
+        .duty-sheet-document.density-compact .duty-sheet-table td {
+            height: 2.9mm;
+            padding: 0.25mm 0.8mm !important;
+        }
+
+        .duty-sheet-document.density-ultra {
+            zoom: 0.82;
+        }
+
+        .duty-sheet-document.density-ultra .signature-section,
+        .duty-sheet-document.density-ultra .notes-section {
+            display: none !important;
+        }
     }
     
     @page {
-        size: A4;
-        margin: 1cm;
+        size: A4 landscape;
+        margin: 6mm;
     }
 }
 </style>
@@ -26,6 +226,13 @@
 {% endblock %}
 
 {% block content %}
+{% set print_stats = namespace(total=0) %}
+{% for duty_type, shifts in organized_duties.items() %}
+    {% for shift, assignments in shifts.items() %}
+        {% set print_stats.total = print_stats.total + assignments|length %}
+    {% endfor %}
+{% endfor %}
+
 <div class="no-print d-flex justify-content-between align-items-center mb-4">
     <h1>
         <i class="fas fa-print me-2"></i>
@@ -45,7 +252,7 @@
 </div>
 
 <!-- Duty Sheet Header -->
-<div class="card">
+<div class="card duty-sheet-document {% if print_stats.total > 36 %}density-ultra{% elif print_stats.total > 20 %}density-compact{% endif %}">
     <div class="card-header text-center">
         <h2 class="mb-0">ΦΥΛΛΟ ΥΠΗΡΕΣΙΑΣ</h2>
         <h4 class="text-muted">{{ sheet_date.strftime('%A, %d %B %Y') }}</h4>

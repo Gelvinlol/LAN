@@ -117,9 +117,10 @@
                                         {% for available_soldier in available_soldiers %}
                                         <option value="{{ available_soldier.id }}" 
                                                 {% if available_soldier.id == soldier.id %}selected{% endif %}
-                                                {% if available_soldier.exemption_no_duty %}disabled{% endif %}>
+                                                {% if available_soldier.exemption_no_duty or (available_soldier.id in assigned_soldier_ids and available_soldier.id != soldier.id) %}disabled{% endif %}>
                                             {{ available_soldier.name }}
                                             {% if available_soldier.exemption_no_duty %} (Άνευ υπηρεσίας)
+                                            {% elif available_soldier.id in assigned_soldier_ids and available_soldier.id != soldier.id %} (Ήδη στο πρόγραμμα)
                                             {% else %}
                                                 {% set last_duty_date = available_soldier.get_last_duty_date() %}
                                                 {% if last_duty_date %} - Τελευταία: {{ last_duty_date.strftime('%d/%m/%Y') }}

@@ -49,7 +49,9 @@ class DutyScheduler:
                 )
                 db.session.add(schedule_obj)
             
-            schedule_obj.is_finalized = True
+            # Automatic generation always creates a draft. Duties only become
+            # official when a user explicitly finalizes the schedule.
+            schedule_obj.is_finalized = False
             
             db.session.commit()
             return True
@@ -231,10 +233,13 @@ class DutyScheduler:
         try:
             cutoff_date = reference_date - timedelta(days=days_back)
             
-            count = db.session.query(DutyAssignment).filter(
+            count = db.session.query(DutyAssignment).join(
+                DutySchedule, DutySchedule.schedule_date == DutyAssignment.duty_date
+            ).filter(
                 DutyAssignment.soldier_id == soldier.id,
                 DutyAssignment.duty_date >= cutoff_date,
-                DutyAssignment.duty_date < reference_date
+                DutyAssignment.duty_date < reference_date,
+                DutySchedule.is_finalized.is_(True),
             ).count()
             
             return count
@@ -245,9 +250,12 @@ class DutyScheduler:
     def _get_days_since_last_duty(self, soldier, reference_date):
         """Get number of days since soldier's last duty"""
         try:
-            last_assignment = db.session.query(DutyAssignment).filter(
+            last_assignment = db.session.query(DutyAssignment).join(
+                DutySchedule, DutySchedule.schedule_date == DutyAssignment.duty_date
+            ).filter(
                 DutyAssignment.soldier_id == soldier.id,
-                DutyAssignment.duty_date < reference_date
+                DutyAssignment.duty_date < reference_date,
+                DutySchedule.is_finalized.is_(True),
             ).order_by(DutyAssignment.duty_date.desc()).first()
             
             if not last_assignment:
