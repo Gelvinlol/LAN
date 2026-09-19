@@ -243,6 +243,7 @@ class DutyType(db.Model):
     team_size = db.Column(db.Integer, default=1)
     shifts_per_day = db.Column(db.Integer, default=3)
     is_active = db.Column(db.Boolean, default=True)
+    is_deleted = db.Column(db.Boolean, nullable=False, default=False)
     requires_weapon = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     

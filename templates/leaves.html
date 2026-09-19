@@ -92,9 +92,8 @@
                         <td>{{ leave.reason or '-' }}</td>
                         <td>
                             {% if leave.status == 'Pending' %}
-                            <form method="POST" action="{{ url_for('approve_leave', leave_id=leave.id) }}" style="display: inline;">
-                                <button type="submit" class="btn btn-sm btn-success" 
-                                        onclick="return confirm('Είστε σίγουροι ότι θέλετε να εγκρίνετε αυτή την άδεια;')">
+                            <form method="POST" action="{{ url_for('approve_leave', leave_id=leave.id) }}" style="display: inline;" data-confirm="Είστε σίγουροι ότι θέλετε να εγκρίνετε αυτή την άδεια;" data-confirm-title="Έγκριση άδειας" data-confirm-button="Έγκριση">
+                                <button type="submit" class="btn btn-sm btn-success">
                                     <i class="fas fa-check me-1"></i>Έγκριση
                                 </button>
                             </form>

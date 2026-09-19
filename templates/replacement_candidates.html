@@ -22,7 +22,7 @@
     <div class="card-header"><h5 class="mb-0"><i class="fas fa-ranking-star me-2"></i>Προτεινόμενοι διαθέσιμοι στρατιώτες</h5></div>
     <div class="card-body">
         {% if candidate_rows %}
-        <form method="POST" action="{{ url_for('replace_assignment_emergency', assignment_id=assignment.id) }}">
+        <form method="POST" action="{{ url_for('replace_assignment_emergency', assignment_id=assignment.id) }}" data-confirm="Να πραγματοποιηθεί η έκτακτη αντικατάσταση;" data-confirm-title="Έκτακτη αντικατάσταση" data-confirm-button="Ολοκλήρωση" data-confirm-variant="danger">
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead><tr><th></th><th>Στρατιώτης</th><th>Ιατρική κατηγορία</th><th>Σύνολο υπηρεσιών</th><th>Σ/Κ & αργίες</th><th>Τελευταία υπηρεσία</th></tr></thead>
@@ -45,7 +45,7 @@
                 <input class="form-control" id="reason" name="reason" maxlength="300" placeholder="π.χ. Ασθένεια, έκτακτη άδεια" required>
             </div>
             <div class="d-flex justify-content-end mt-4">
-                <button class="btn btn-danger" type="submit" onclick="return confirm('Να πραγματοποιηθεί η έκτακτη αντικατάσταση;');"><i class="fas fa-rotate me-1"></i>Ολοκλήρωση Αντικατάστασης</button>
+                <button class="btn btn-danger" type="submit"><i class="fas fa-rotate me-1"></i>Ολοκλήρωση Αντικατάστασης</button>
             </div>
         </form>
         {% else %}

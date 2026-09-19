@@ -52,6 +52,7 @@ ENDPOINT_PERMISSIONS = {
     "duties": "duties.view",
     "get_duty_type": "duties.manage",
     "toggle_duty_type": "duties.manage",
+    "delete_duty_type": "duties.manage",
     "edit_duty_type": "duties.manage",
     "configure_duty_numbers": "duties.manage",
     "add_duty_type": "duties.manage",

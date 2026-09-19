@@ -123,6 +123,32 @@
         <span>ΣΔΜ / ΕΣΩΤΕΡΙΚΟ ΔΙΚΤΥΟ</span>
     </footer>
 
+    <div class="modal fade app-confirm-modal" id="appConfirmModal" tabindex="-1" aria-labelledby="appConfirmTitle" aria-describedby="appConfirmMessage" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="confirm-accent" aria-hidden="true"></div>
+                <div class="modal-body">
+                    <div class="confirm-heading">
+                        <span class="confirm-icon" aria-hidden="true"><i class="fas fa-shield-halved"></i></span>
+                        <div>
+                            <span class="confirm-eyebrow">ΕΠΙΒΕΒΑΙΩΣΗ // ΕΝΕΡΓΕΙΑ</span>
+                            <h2 class="modal-title" id="appConfirmTitle">Επιβεβαίωση ενέργειας</h2>
+                        </div>
+                    </div>
+                    <p id="appConfirmMessage" class="confirm-message"></p>
+                    <div class="confirm-actions">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-xmark me-1"></i>Ακύρωση
+                        </button>
+                        <button type="button" class="btn btn-primary confirm-accept">
+                            <i class="fas fa-check me-1"></i><span>Επιβεβαίωση</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_scripts %}{% endblock %}

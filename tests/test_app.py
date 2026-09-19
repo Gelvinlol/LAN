@@ -111,6 +111,40 @@ def test_inactive_user_cannot_log_in(client):
     assert "Λανθασμένα στοιχεία σύνδεσης" in response.get_data(as_text=True)
 
 
+def test_soldier_search_ignores_case_and_greek_diacritics(client):
+    with app.app_context():
+        db.session.add_all([
+            Soldier(
+                name="Γιώργος Παπαδόπουλος",
+                military_id="SEARCH001",
+                enlistment_date=date(2026, 1, 1),
+                specialty="Οδηγός",
+                status="Active",
+            ),
+            Soldier(
+                name="Νίκος Δοκιμή",
+                military_id="SEARCH002",
+                enlistment_date=date(2026, 1, 1),
+                specialty="Μάγειρας",
+                status="Active",
+            ),
+        ])
+        db.session.commit()
+
+    client.post(
+        "/login", data={"username": "tester", "password": "test-password"}
+    )
+    response = client.get("/soldiers?search=ΓΙΩΡΓΟΣ")
+    page = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Γιώργος Παπαδόπουλος" in page
+    assert "Νίκος Δοκιμή" not in page
+    assert "setTimeout(submitSoldierSearch, 700)" in page
+    assert 'id="soldiers-results"' in page
+    assert "currentResults.replaceWith(newResults)" in page
+
+
 def test_scheduler_prioritizes_never_assigned_and_respects_availability(client):
     schedule_date = date(2026, 9, 20)
     with app.app_context():
@@ -949,3 +983,63 @@ def test_duty_number_configuration_route(client):
             requirement.service_number: requirement.staff_count
             for requirement in requirements
         } == {1: 1, 4: 2}
+
+
+def test_delete_duty_type_requires_confirmation_and_preserves_history(client):
+    duty_date = date(2026, 9, 28)
+    with app.app_context():
+        soldier = Soldier(
+            name="Historical Soldier", military_id="DELETE001",
+            enlistment_date=duty_date - timedelta(days=100), status="Active",
+        )
+        duty_type = DutyType(name="Historical Duty", is_active=True)
+        db.session.add_all([soldier, duty_type])
+        db.session.flush()
+        db.session.add(DutySchedule(
+            schedule_date=duty_date, is_finalized=True,
+        ))
+        db.session.add(DutyAssignment(
+            soldier_id=soldier.id,
+            duty_type_id=duty_type.id,
+            duty_date=duty_date,
+            service_number=1,
+            position_in_team=1,
+        ))
+        db.session.commit()
+        duty_id = duty_type.id
+
+    client.post(
+        "/login", data={"username": "tester", "password": "test-password"}
+    )
+
+    response = client.post(
+        f"/duties/{duty_id}/delete", data={}, follow_redirects=False,
+    )
+    assert response.status_code == 302
+    with app.app_context():
+        duty_type = db.session.get(DutyType, duty_id)
+        assert duty_type.is_deleted is False
+        assert duty_type.is_active is True
+
+    response = client.post(
+        f"/duties/{duty_id}/delete",
+        data={"confirm_delete": "yes"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+
+    with app.app_context():
+        duty_type = db.session.get(DutyType, duty_id)
+        assert duty_type is not None
+        assert duty_type.is_deleted is True
+        assert duty_type.is_active is False
+        assignment = DutyAssignment.query.filter_by(
+            duty_type_id=duty_id, duty_date=duty_date,
+        ).one()
+        assert assignment.duty_type.name == "Historical Duty"
+
+    # The first request consumes the success message containing the duty name.
+    client.get("/duties")
+    duties_page = client.get("/duties").get_data(as_text=True)
+    assert "Historical Duty" not in duties_page
+    assert client.get(f"/duties/{duty_id}/edit").status_code == 404

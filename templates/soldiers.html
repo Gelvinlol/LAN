@@ -16,11 +16,12 @@
 <!-- Search and Filter -->
 <div class="card mb-4">
     <div class="card-body">
-        <form method="GET" class="row g-3">
+        <form method="GET" class="row g-3" id="soldier-search-form">
             <div class="col-md-4">
                 <label for="search" class="form-label">Αναζήτηση</label>
                 <input type="text" class="form-control" id="search" name="search" 
-                       value="{{ search }}" placeholder="Όνομα, Αριθμός, Ειδικότητα...">
+                       value="{{ search }}" data-initial-value="{{ search }}" placeholder="Όνομα, Αριθμός, Ειδικότητα..." autocomplete="off">
+                <div class="form-text" id="search-status" aria-live="polite">Αυτόματη αναζήτηση χωρίς διάκριση τόνων ή πεζών/κεφαλαίων.</div>
             </div>
             <div class="col-md-3">
                 <label for="status" class="form-label">Κατάσταση</label>
@@ -43,7 +44,7 @@
 </div>
 
 <!-- Soldiers Table -->
-<div class="card">
+<div class="card" id="soldiers-results">
     <div class="card-body">
         {% if soldiers %}
             <div class="table-responsive">
@@ -229,6 +230,84 @@
 
 {% block extra_scripts %}
 <script>
+const soldierSearchForm = document.getElementById('soldier-search-form');
+const soldierSearchInput = document.getElementById('search');
+const soldierSearchStatus = document.getElementById('search-status');
+let soldierSearchTimer;
+let soldierSearchComposing = false;
+let soldierSearchRequest;
+
+function soldierSearchIdleMessage() {
+    soldierSearchStatus.textContent = 'Αυτόματη αναζήτηση χωρίς διάκριση τόνων ή πεζών/κεφαλαίων.';
+}
+
+async function refreshSoldierResults() {
+    clearTimeout(soldierSearchTimer);
+    if (soldierSearchRequest) soldierSearchRequest.abort();
+    soldierSearchRequest = new AbortController();
+
+    const query = new URLSearchParams(new FormData(soldierSearchForm));
+    const requestUrl = `${window.location.pathname}?${query.toString()}`;
+    soldierSearchStatus.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Αναζήτηση...';
+
+    try {
+        const response = await fetch(requestUrl, {
+            signal: soldierSearchRequest.signal,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const documentCopy = new DOMParser().parseFromString(await response.text(), 'text/html');
+        const newResults = documentCopy.getElementById('soldiers-results');
+        const currentResults = document.getElementById('soldiers-results');
+        if (!newResults || !currentResults) throw new Error('Δεν βρέθηκε η περιοχή αποτελεσμάτων.');
+
+        currentResults.replaceWith(newResults);
+        window.history.replaceState({}, '', requestUrl);
+        soldierSearchInput.dataset.initialValue = soldierSearchInput.value;
+        soldierSearchInput.focus({ preventScroll: true });
+        const cursorPosition = soldierSearchInput.value.length;
+        soldierSearchInput.setSelectionRange(cursorPosition, cursorPosition);
+        soldierSearchIdleMessage();
+    } catch (error) {
+        if (error.name === 'AbortError') return;
+        console.error('Soldier search failed:', error);
+        soldierSearchStatus.textContent = 'Η αναζήτηση απέτυχε. Πατήστε Enter για νέα προσπάθεια.';
+    }
+}
+
+function submitSoldierSearch() {
+    if (soldierSearchInput.value === soldierSearchInput.dataset.initialValue) {
+        soldierSearchIdleMessage();
+        return;
+    }
+    soldierSearchForm.requestSubmit();
+}
+
+function scheduleSoldierSearch() {
+    clearTimeout(soldierSearchTimer);
+    if (soldierSearchRequest) soldierSearchRequest.abort();
+    soldierSearchStatus.innerHTML = '<i class="fas fa-keyboard me-1"></i>Πληκτρολόγηση...';
+    soldierSearchTimer = setTimeout(submitSoldierSearch, 700);
+}
+
+soldierSearchInput.addEventListener('compositionstart', () => {
+    soldierSearchComposing = true;
+    clearTimeout(soldierSearchTimer);
+});
+soldierSearchInput.addEventListener('compositionend', () => {
+    soldierSearchComposing = false;
+    scheduleSoldierSearch();
+});
+soldierSearchInput.addEventListener('input', () => {
+    if (!soldierSearchComposing) scheduleSoldierSearch();
+});
+soldierSearchForm.addEventListener('submit', event => {
+    event.preventDefault();
+    refreshSoldierResults();
+});
+document.getElementById('status').addEventListener('change', () => soldierSearchForm.requestSubmit());
+
 function openEYModal(soldierId, soldierName, currentDays, currentReason) {
     document.getElementById('soldierName').value = soldierName;
     document.getElementById('daysOutOfService').value = currentDays;

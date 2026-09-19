@@ -61,7 +61,7 @@
                         <td>{{ medical_case.end_date.strftime('%d/%m/%Y') if medical_case.end_date else 'Μέχρι νεωτέρας' }}</td>
                         <td>
                             {% if not medical_case.end_date or medical_case.end_date > today %}
-                            <form method="POST" action="{{ url_for('close_medical_case', case_id=medical_case.id) }}" class="d-flex gap-2" onsubmit="return confirm('Είστε σίγουροι ότι θέλετε να ολοκληρώσετε αυτό το περιστατικό;');">
+                            <form method="POST" action="{{ url_for('close_medical_case', case_id=medical_case.id) }}" class="d-flex gap-2" data-confirm="Είστε σίγουροι ότι θέλετε να ολοκληρώσετε αυτό το περιστατικό;" data-confirm-title="Ολοκλήρωση περιστατικού" data-confirm-button="Ολοκλήρωση">
                                 <input type="date" name="end_date" value="{{ today.isoformat() }}" min="{{ medical_case.start_date.isoformat() }}" class="form-control form-control-sm" aria-label="Ημερομηνία λήξης">
                                 <button class="btn btn-sm btn-outline-success" type="submit" title="Ολοκλήρωση"><i class="fas fa-check"></i></button>
                             </form>

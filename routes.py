@@ -10,6 +10,17 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from urllib.parse import urljoin, urlparse
 import logging
+import unicodedata
+
+
+def normalize_search_text(value):
+    """Make Greek/Latin text comparable without case or diacritics."""
+    decomposed = unicodedata.normalize('NFD', value or '')
+    without_diacritics = ''.join(
+        character for character in decomposed
+        if unicodedata.category(character) != 'Mn'
+    )
+    return without_diacritics.casefold().strip()
 
 
 @app.context_processor
@@ -279,7 +290,9 @@ def index():
     total_soldiers = Soldier.query.count()
     active_soldiers = Soldier.query.filter_by(status='Active').count()
     soldiers_on_leave = Soldier.query.filter_by(status='On Leave').count()
-    total_duty_types = DutyType.query.filter_by(is_active=True).count()
+    total_duty_types = DutyType.query.filter_by(
+        is_active=True, is_deleted=False
+    ).count()
     
     # Get today's duties
     today = date.today()
@@ -319,24 +332,29 @@ def index():
 @app.route('/soldiers')
 @login_required
 def soldiers():
-    search = request.args.get('search', '')
+    search = request.args.get('search', '').strip()
     status_filter = request.args.get('status', '')
     
     query = Soldier.query
-    
-    if search:
-        query = query.filter(
-            db.or_(
-                Soldier.name.contains(search),
-                Soldier.military_id.contains(search),
-                Soldier.specialty.contains(search)
-            )
-        )
-    
+
     if status_filter:
         query = query.filter_by(status=status_filter)
-    
-    soldiers_list = query.order_by(Soldier.name).all()
+
+    soldiers_list = query.all()
+    normalized_search = normalize_search_text(search)
+    if normalized_search:
+        soldiers_list = [
+            soldier for soldier in soldiers_list
+            if any(
+                normalized_search in normalize_search_text(value)
+                for value in (
+                    soldier.name,
+                    soldier.military_id,
+                    soldier.specialty,
+                )
+            )
+        ]
+    soldiers_list.sort(key=lambda soldier: normalize_search_text(soldier.name))
     
     return render_template('soldiers.html', soldiers=soldiers_list, search=search, status_filter=status_filter)
 
@@ -684,7 +702,7 @@ def replace_assignment_emergency(assignment_id):
 @app.route('/duties')
 @login_required
 def duties():
-    duty_types = DutyType.query.filter_by(is_active=True).all()
+    duty_types = DutyType.query.filter_by(is_deleted=False).all()
     return render_template('duties.html', duty_types=duty_types)
 
 @app.route('/duties/<int:duty_id>/edit', methods=['GET'])
@@ -692,7 +710,9 @@ def duties():
 def get_duty_type(duty_id):
     """Get duty type data for editing"""
     from flask import jsonify
-    duty_type = DutyType.query.get_or_404(duty_id)
+    duty_type = DutyType.query.filter_by(
+        id=duty_id, is_deleted=False
+    ).first_or_404()
     return jsonify({
         'id': duty_type.id,
         'name': duty_type.name,
@@ -707,7 +727,9 @@ def toggle_duty_type(duty_id):
     """Toggle duty type active status"""
     from flask import jsonify
     try:
-        duty_type = DutyType.query.get_or_404(duty_id)
+        duty_type = DutyType.query.filter_by(
+            id=duty_id, is_deleted=False
+        ).first_or_404()
         duty_type.is_active = not duty_type.is_active
         db.session.commit()
         
@@ -720,13 +742,40 @@ def toggle_duty_type(duty_id):
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)})
 
+
+@app.route('/duties/<int:duty_id>/delete', methods=['POST'])
+@login_required
+def delete_duty_type(duty_id):
+    duty_type = db.get_or_404(DutyType, duty_id)
+    if request.form.get('confirm_delete') != 'yes':
+        flash('Η διαγραφή της υπηρεσίας δεν επιβεβαιώθηκε.', 'error')
+        return redirect(url_for('duties'))
+    if duty_type.is_deleted:
+        flash('Η υπηρεσία έχει ήδη διαγραφεί.', 'info')
+        return redirect(url_for('duties'))
+
+    duty_type.is_active = False
+    duty_type.is_deleted = True
+    db.session.commit()
+    log_activity(
+        'delete_duty_type', 'duty_type', duty_type.id,
+        f'Διαγράφηκε η υπηρεσία {duty_type.name}. Το ιστορικό διατηρήθηκε.'
+    )
+    flash(
+        f'Η υπηρεσία {duty_type.name} διαγράφηκε. Το υπάρχον ιστορικό της διατηρήθηκε.',
+        'success',
+    )
+    return redirect(url_for('duties'))
+
 @app.route('/duties/edit', methods=['POST'])
 @login_required
 def edit_duty_type():
     """Edit existing duty type"""
     try:
         duty_id = int(request.form['duty_id'])
-        duty_type = DutyType.query.get_or_404(duty_id)
+        duty_type = DutyType.query.filter_by(
+            id=duty_id, is_deleted=False
+        ).first_or_404()
         
         old_name = duty_type.name
         duty_type.name = request.form['name']
@@ -752,7 +801,9 @@ def edit_duty_type():
 @app.route('/duties/<int:duty_id>/numbers', methods=['GET', 'POST'])
 @login_required
 def configure_duty_numbers(duty_id):
-    duty_type = db.get_or_404(DutyType, duty_id)
+    duty_type = DutyType.query.filter_by(
+        id=duty_id, is_deleted=False
+    ).first_or_404()
 
     if request.method == 'POST':
         try:
@@ -1519,7 +1570,9 @@ def check_staffing(date_str):
         # Clear existing alerts for this date
         StaffingAlert.query.filter_by(alert_date=check_date).delete()
         
-        duty_types = DutyType.query.filter_by(is_active=True).all()
+        duty_types = DutyType.query.filter_by(
+            is_active=True, is_deleted=False
+        ).all()
         alerts_created = 0
         
         for duty_type in duty_types:

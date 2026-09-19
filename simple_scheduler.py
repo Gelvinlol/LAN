@@ -28,7 +28,9 @@ class SimpleScheduler:
             DutyAssignment.query.filter_by(duty_date=schedule_date).delete()
             
             # Get all active duty types
-            duty_types = DutyType.query.filter_by(is_active=True).all()
+            duty_types = DutyType.query.filter_by(
+                is_active=True, is_deleted=False
+            ).all()
             
             # Get all available soldiers
             soldiers_on_leave = db.session.query(SoldierLeave.soldier_id).filter(

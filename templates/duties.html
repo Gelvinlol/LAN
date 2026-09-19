@@ -48,7 +48,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <div class="btn-group" role="group">
+                                <div class="d-flex gap-1" role="group">
                                     <a href="{{ url_for('configure_duty_numbers', duty_id=duty_type.id) }}" class="btn btn-sm btn-outline-info" title="Νούμερα και ωράρια"><i class="fas fa-clock"></i></a>
                                     <button type="button" class="btn btn-sm btn-outline-primary" 
                                             onclick="editDutyType({{ duty_type.id }})">
@@ -58,6 +58,10 @@
                                             onclick="toggleDutyType({{ duty_type.id }}, {{ duty_type.is_active|lower }})">
                                         <i class="fas fa-{{ 'pause' if duty_type.is_active else 'play' }}"></i>
                                     </button>
+                                    <form method="POST" action="{{ url_for('delete_duty_type', duty_id=duty_type.id) }}" class="d-inline" data-confirm="Να διαγραφεί αυτή η υπηρεσία; Θα αφαιρεθεί από τα νέα προγράμματα, αλλά το υπάρχον ιστορικό της θα διατηρηθεί." data-confirm-title="Διαγραφή υπηρεσίας" data-confirm-button="Διαγραφή" data-confirm-variant="danger">
+                                        <input type="hidden" name="confirm_delete" value="yes">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Διαγραφή υπηρεσίας"><i class="fas fa-trash"></i></button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -202,9 +206,13 @@ function editDutyType(dutyTypeId) {
         });
 }
 
-function toggleDutyType(dutyTypeId, isActive) {
+async function toggleDutyType(dutyTypeId, isActive) {
     const action = isActive ? 'απενεργοποιήσετε' : 'ενεργοποιήσετε';
-    if (confirm(`Θέλετε να ${action} αυτή την υπηρεσία;`)) {
+    if (await appConfirm(`Θέλετε να ${action} αυτή την υπηρεσία;`, {
+        title: isActive ? 'Απενεργοποίηση υπηρεσίας' : 'Ενεργοποίηση υπηρεσίας',
+        confirmText: isActive ? 'Απενεργοποίηση' : 'Ενεργοποίηση',
+        variant: isActive ? 'danger' : 'primary'
+    })) {
         fetch(`/duties/${dutyTypeId}/toggle`, {
             method: 'POST',
             headers: {

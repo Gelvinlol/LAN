@@ -18,6 +18,7 @@ function initializeApplication() {
     initializeDateInputs();
     initializeTableSorting();
     handleFlashMessages();
+    initializeConfirmations();
 }
 
 /**
@@ -167,16 +168,82 @@ function getDayName(dateString) {
 }
 
 /**
- * Confirmation dialogs
+ * Application confirmation modal.
+ * Returns a Promise<boolean> for asynchronous confirmation flows.
  */
-function confirmAction(message, callback) {
-    if (confirm(message)) {
-        if (typeof callback === 'function') {
-            callback();
+function appConfirm(message, options = {}) {
+    const modalElement = document.getElementById('appConfirmModal');
+    if (!modalElement) return Promise.resolve(false);
+
+    const title = modalElement.querySelector('#appConfirmTitle');
+    const messageElement = modalElement.querySelector('#appConfirmMessage');
+    const acceptButton = modalElement.querySelector('.confirm-accept');
+    const acceptLabel = acceptButton.querySelector('span');
+    const icon = modalElement.querySelector('.confirm-icon i');
+    const variant = options.variant === 'danger' ? 'danger' : 'primary';
+
+    title.textContent = options.title || 'Επιβεβαίωση ενέργειας';
+    messageElement.textContent = message;
+    acceptLabel.textContent = options.confirmText || 'Επιβεβαίωση';
+    acceptButton.className = `btn btn-${variant} confirm-accept`;
+    icon.className = variant === 'danger'
+        ? 'fas fa-triangle-exclamation'
+        : 'fas fa-shield-halved';
+    modalElement.classList.toggle('confirm-danger', variant === 'danger');
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalElement, {
+        backdrop: 'static',
+        keyboard: true
+    });
+
+    return new Promise(resolve => {
+        let accepted = false;
+        const accept = () => {
+            accepted = true;
+            modal.hide();
+        };
+        const finish = () => {
+            acceptButton.removeEventListener('click', accept);
+            resolve(accepted);
+        };
+
+        acceptButton.addEventListener('click', accept, { once: true });
+        modalElement.addEventListener('hidden.bs.modal', finish, { once: true });
+        modal.show();
+    });
+}
+
+function initializeConfirmations() {
+    document.addEventListener('submit', async event => {
+        if (event.defaultPrevented) return;
+
+        const form = event.target;
+        const submitter = event.submitter;
+        const source = submitter && submitter.dataset.confirm ? submitter : form;
+        const message = source.dataset.confirm;
+        if (!message || form.dataset.confirmAccepted === 'true') return;
+
+        event.preventDefault();
+        const accepted = await appConfirm(message, {
+            title: source.dataset.confirmTitle,
+            confirmText: source.dataset.confirmButton,
+            variant: source.dataset.confirmVariant
+        });
+        if (!accepted) return;
+
+        form.dataset.confirmAccepted = 'true';
+        if (submitter) {
+            form.requestSubmit(submitter);
+        } else {
+            form.requestSubmit();
         }
-        return true;
-    }
-    return false;
+    });
+}
+
+async function confirmAction(message, callback, options = {}) {
+    const accepted = await appConfirm(message, options);
+    if (accepted && typeof callback === 'function') callback();
+    return accepted;
 }
 
 /**

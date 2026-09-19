@@ -219,10 +219,13 @@ function changeScheduleDate(newDate) {
     window.location.href = '{{ url_for("schedule") }}?date=' + newDate;
 }
 
-function generateSchedule() {
+async function generateSchedule() {
     const date = document.getElementById('schedule_date').value;
     
-    if (confirm('Θέλετε να δημιουργήσετε αυτόματα το πρόγραμμα για ' + formatDate(date) + ';')) {
+    if (await appConfirm('Θέλετε να δημιουργήσετε αυτόματα το πρόγραμμα για ' + formatDate(date) + ';', {
+        title: 'Αυτόματη δημιουργία προγράμματος',
+        confirmText: 'Δημιουργία'
+    })) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = '{{ url_for("generate_schedule") }}';
@@ -238,10 +241,14 @@ function generateSchedule() {
     }
 }
 
-function clearSchedule() {
+async function clearSchedule() {
     const date = document.getElementById('schedule_date').value;
     
-    if (confirm('Θέλετε να διαγράψετε το πρόγραμμα για ' + formatDate(date) + '; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.')) {
+    if (await appConfirm('Θέλετε να διαγράψετε το πρόγραμμα για ' + formatDate(date) + '; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.', {
+        title: 'Διαγραφή προγράμματος',
+        confirmText: 'Διαγραφή',
+        variant: 'danger'
+    })) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = '{{ url_for("clear_schedule") }}';
@@ -257,8 +264,11 @@ function clearSchedule() {
     }
 }
 
-function finalizeSchedule() {
-    if (confirm('Είστε σίγουροι ότι θέλετε να οριστικοποιήσετε το πρόγραμμα; Μετά την οριστικοποίηση δεν θα μπορείτε να κάνετε αλλαγές.')) {
+async function finalizeSchedule() {
+    if (await appConfirm('Είστε σίγουροι ότι θέλετε να οριστικοποιήσετε το πρόγραμμα; Μετά την οριστικοποίηση δεν θα μπορείτε να κάνετε αλλαγές.', {
+        title: 'Οριστικοποίηση προγράμματος',
+        confirmText: 'Οριστικοποίηση'
+    })) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = '{{ url_for("finalize_schedule") }}';
@@ -274,7 +284,7 @@ function finalizeSchedule() {
     }
 }
 
-function updateAssignment(selectElement) {
+async function updateAssignment(selectElement) {
     const form = selectElement.closest('.assignment-form');
     const spinner = form.querySelector('.spinner-border');
     const selectedOption = selectElement.options[selectElement.selectedIndex];
@@ -295,7 +305,10 @@ function updateAssignment(selectElement) {
     }
     
     // Show confirmation dialog
-    if (confirm(`Είστε σίγουροι ότι θέλετε να αλλάξετε τον στρατιώτη σε ${soldierName};`)) {
+    if (await appConfirm(`Είστε σίγουροι ότι θέλετε να αλλάξετε τον στρατιώτη σε ${soldierName};`, {
+        title: 'Αλλαγή ανάθεσης',
+        confirmText: 'Αλλαγή'
+    })) {
         console.log('DEBUG: User confirmed change, creating manual form submission');
         
         // Show loading indicator

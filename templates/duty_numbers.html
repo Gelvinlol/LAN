@@ -61,7 +61,7 @@
     <div class="d-flex flex-wrap justify-content-between gap-2 mt-4">
         <div class="d-flex flex-wrap gap-2">
             <button type="button" class="btn btn-success" id="add-number"><i class="fas fa-plus me-1"></i>Νέο Νούμερο</button>
-            <button type="submit" name="action" value="reset-default" class="btn btn-outline-secondary" onclick="return confirm('Να διαγραφούν οι αλλαγές και να επανέλθει το πρότυπο Νο 1–3;');"><i class="fas fa-rotate-left me-1"></i>Επαναφορά Προτύπου</button>
+            <button type="submit" name="action" value="reset-default" class="btn btn-outline-secondary" data-confirm="Να διαγραφούν οι αλλαγές και να επανέλθει το πρότυπο Νο 1–3;" data-confirm-title="Επαναφορά προτύπου" data-confirm-button="Επαναφορά" data-confirm-variant="danger"><i class="fas fa-rotate-left me-1"></i>Επαναφορά Προτύπου</button>
         </div>
         <button type="submit" class="btn btn-primary px-4"><i class="fas fa-floppy-disk me-1"></i>Αποθήκευση Ωραρίων</button>
     </div>
@@ -89,11 +89,15 @@ function wireCard(card) {
     card.querySelector('.add-shift').addEventListener('click', () => {
         container.appendChild(shiftRow(number));
     });
-    card.addEventListener('click', event => {
+    card.addEventListener('click', async event => {
         const removeShift = event.target.closest('.remove-shift');
         if (removeShift) removeShift.closest('.shift-row').remove();
         const removeNumber = event.target.closest('.remove-number');
-        if (removeNumber && confirm(`Να αφαιρεθεί ολόκληρο το Νο ${number};`)) {
+        if (removeNumber && await appConfirm(`Να αφαιρεθεί ολόκληρο το Νο ${number};`, {
+            title: 'Αφαίρεση αριθμού',
+            confirmText: 'Αφαίρεση',
+            variant: 'danger'
+        })) {
             card.closest('.number-column').remove();
         }
     });

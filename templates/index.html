@@ -104,8 +104,11 @@
 
 {% block extra_scripts %}
 <script>
-function generateTodaySchedule() {
-    if (confirm('Θέλετε να δημιουργήσετε αυτόματα το πρόγραμμα για σήμερα;')) {
+async function generateTodaySchedule() {
+    if (await appConfirm('Θέλετε να δημιουργήσετε αυτόματα το πρόγραμμα για σήμερα;', {
+        title: 'Αυτόματη δημιουργία προγράμματος',
+        confirmText: 'Δημιουργία'
+    })) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = '{{ url_for("generate_schedule") }}';
