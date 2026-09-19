@@ -4,7 +4,11 @@ import logging
 from datetime import timedelta
 
 from app import db
-from models import Soldier, DutyType, DutyAssignment, DutySchedule, SoldierLeave
+from models import (
+    Soldier, DutyType, DutyAssignment, DutySchedule, SoldierLeave, MedicalCase
+)
+from service_numbers import serialize_service_shifts
+from operational_calendar import is_weekend_or_holiday
 
 
 logger = logging.getLogger(__name__)
@@ -15,6 +19,7 @@ class SimpleScheduler:
         self._fairness_metrics = {}
         self._duty_type_counts = {}
         self._last_duty_type = {}
+        self._special_day_counts = {}
     
     def generate_daily_schedule(self, schedule_date):
         """Generate a comprehensive duty schedule for a specific date"""
@@ -31,10 +36,15 @@ class SimpleScheduler:
                 SoldierLeave.start_date <= schedule_date,
                 SoldierLeave.end_date >= schedule_date,
             )
+            soldiers_with_medical_case = db.session.query(MedicalCase.soldier_id).filter(
+                MedicalCase.start_date <= schedule_date,
+                db.or_(MedicalCase.end_date.is_(None), MedicalCase.end_date >= schedule_date),
+            )
             available_soldiers = Soldier.query.filter(
                 Soldier.status == 'Active',
                 Soldier.exemption_no_duty.is_(False),
                 ~Soldier.id.in_(soldiers_on_leave),
+                ~Soldier.id.in_(soldiers_with_medical_case),
             ).all()
             available_soldiers = [
                 soldier for soldier in available_soldiers if soldier.is_available_for_duty()
@@ -49,41 +59,50 @@ class SimpleScheduler:
             used_soldiers = set()
             assignments_created = 0
             assignments_required = sum(
-                duty_type.team_size * max(1, duty_type.shifts_per_day)
+                sum(
+                    duty_type.get_staff_count(service_number)
+                    for service_number in duty_type.get_service_numbers()
+                )
                 for duty_type in duty_types
             )
             
-            # Assign multiple shifts for each duty type
+            # Each duty defines which service numbers it needs and the time
+            # periods inherited by the soldier assigned to each number.
             for duty_type in duty_types:
-                # Respect the configured number of shifts for each duty type.
-                for shift_num in range(1, max(1, duty_type.shifts_per_day) + 1):
-                    # Get fair candidates for this shift
-                    candidates = self._get_fair_candidates(
-                        available_soldiers, used_soldiers, schedule_date, duty_type.id
-                    )
-                    
-                    # Assign team members for this shift
-                    for position in range(duty_type.team_size):
+                duty_soldiers = [
+                    soldier for soldier in available_soldiers
+                    if not duty_type.requires_weapon
+                    or soldier.is_available_for_armed_duty()
+                ]
+                for service_number in duty_type.get_service_numbers():
+                    for position in range(
+                        1, duty_type.get_staff_count(service_number) + 1
+                    ):
+                        candidates = self._get_fair_candidates(
+                            duty_soldiers, used_soldiers,
+                            schedule_date, duty_type.id
+                        )
+
                         if not candidates:
                             # Never give a soldier a second duty on the same day.
-                            # An unfilled slot is safer than a duplicate assignment.
-                            break
-                        
-                        if candidates:
-                            soldier = candidates.pop(0)  # Take the most fair candidate
-                            
-                            assignment = DutyAssignment(
-                                soldier_id=soldier.id,
-                                duty_type_id=duty_type.id,
-                                duty_date=schedule_date,
-                                shift_number=shift_num,
-                                position_in_team=position + 1,
-                                notes=f"Auto-assigned by scheduler"
-                            )
-                            
-                            db.session.add(assignment)
-                            assignments_created += 1
-                            used_soldiers.add(soldier.id)
+                            continue
+
+                        soldier = candidates[0]
+                        assignment = DutyAssignment(
+                            soldier_id=soldier.id,
+                            duty_type_id=duty_type.id,
+                            duty_date=schedule_date,
+                            service_number=service_number,
+                            position_in_team=position,
+                            shift_snapshot=serialize_service_shifts(
+                                duty_type.get_shifts_for_number(service_number)
+                            ),
+                            notes="Auto-assigned by scheduler"
+                        )
+
+                        db.session.add(assignment)
+                        assignments_created += 1
+                        used_soldiers.add(soldier.id)
             
             # Create schedule record
             schedule_obj = DutySchedule.query.filter_by(schedule_date=schedule_date).first()
@@ -132,12 +151,16 @@ class SimpleScheduler:
             total_count, recent_count, last_duty_date = self._fairness_metrics.get(
                 soldier.id, (0, 0, None)
             )
+            special_day_count = (
+                self._special_day_counts.get(soldier.id, 0)
+                if is_weekend_or_holiday(schedule_date) else 0
+            )
 
             # Never-assigned soldiers are a strict priority tier. Previously they
             # were treated as "30 days since last duty", so somebody whose last
             # duty was more than 30 days ago could incorrectly outrank them.
             if last_duty_date is None:
-                fairness_key = (0, 0, 0, 0, 0)
+                fairness_key = (0, special_day_count, 0, 0, 0, 0)
             else:
                 days_since_last_duty = (schedule_date - last_duty_date).days
                 historical_score = (recent_count * 10) - (days_since_last_duty * 0.5)
@@ -150,6 +173,7 @@ class SimpleScheduler:
                 ) if duty_type_id is not None else 0
                 fairness_key = (
                     1,
+                    special_day_count,
                     repeats_last_type,
                     same_type_count,
                     total_count,
@@ -173,6 +197,7 @@ class SimpleScheduler:
         }
         self._duty_type_counts = {}
         self._last_duty_type = {}
+        self._special_day_counts = {soldier_id: 0 for soldier_id in soldier_ids}
         if not soldier_ids:
             return
 
@@ -202,6 +227,47 @@ class SimpleScheduler:
             self._duty_type_counts[type_key] = self._duty_type_counts.get(type_key, 0) + 1
             if soldier_id not in self._last_duty_type:
                 self._last_duty_type[soldier_id] = duty_type_id
+            if is_weekend_or_holiday(duty_date):
+                self._special_day_counts[soldier_id] += 1
+
+    def get_replacement_candidates(self, assignment):
+        """Return fair, eligible candidates for an emergency replacement."""
+        target_date = assignment.duty_date
+        unavailable_on_leave = db.session.query(SoldierLeave.soldier_id).filter(
+            SoldierLeave.status == 'Approved',
+            SoldierLeave.start_date <= target_date,
+            SoldierLeave.end_date >= target_date,
+        )
+        unavailable_medical = db.session.query(MedicalCase.soldier_id).filter(
+            MedicalCase.start_date <= target_date,
+            db.or_(MedicalCase.end_date.is_(None), MedicalCase.end_date >= target_date),
+        )
+        candidates = Soldier.query.filter(
+            Soldier.status == 'Active',
+            Soldier.exemption_no_duty.is_(False),
+            ~Soldier.id.in_(unavailable_on_leave),
+            ~Soldier.id.in_(unavailable_medical),
+        ).all()
+        candidates = [
+            soldier for soldier in candidates
+            if soldier.is_available_for_duty()
+            and (
+                not assignment.duty_type.requires_weapon
+                or soldier.is_available_for_armed_duty()
+            )
+        ]
+        assigned_ids = {
+            soldier_id for soldier_id, in db.session.query(
+                DutyAssignment.soldier_id
+            ).filter(DutyAssignment.duty_date == target_date).all()
+        }
+        self._prepare_fairness_metrics(candidates, target_date)
+        return self._get_fair_candidates(
+            candidates, assigned_ids, target_date, assignment.duty_type_id
+        )
+
+    def get_special_day_count(self, soldier_id):
+        return self._special_day_counts.get(soldier_id, 0)
     
     def _get_recent_duty_count(self, soldier, reference_date, days_back=7):
         """Get number of duties in the last N days (only finalized schedules)"""

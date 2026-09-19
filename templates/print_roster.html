@@ -68,6 +68,7 @@
                 </thead>
                 <tbody>
                     {% for soldier in soldiers %}
+                    {% set medical_case = medical_cases.get(soldier.id) %}
                     <tr>
                         <td class="text-center">{{ loop.index }}</td>
                         <td><strong>{{ soldier.name }}</strong></td>
@@ -76,9 +77,8 @@
                             {% if soldier.id in soldier_duties %}
                                 {% for duty in soldier_duties[soldier.id] %}
                                     <span class="badge bg-primary">{{ duty.duty_name }}</span>
-                                    {% if duty.shift > 1 %}
-                                        <small>({{ duty.shift }}ο ΝΟΥΜΕΡΟ)</small>
-                                    {% endif %}
+                                    <small>(Νο {{ duty.service_number }} · Άτομο {{ duty.position }}/{{ duty.staff_count }})</small><br>
+                                    <small>{% for start_at, end_at in duty.shift_occurrences %}{{ start_at.strftime('%H:%M') }}–{{ end_at.strftime('%H:%M') }}{% if start_at.date() != roster_date %} (+1){% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</small>
                                     {% if not loop.last %}<br>{% endif %}
                                 {% endfor %}
                             {% else %}
@@ -86,7 +86,11 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if soldier.status == 'Active' %}
+                            {% if medical_case and not medical_case.attends_roll_call %}
+                                <span class="badge bg-danger">Εκτός Αναφοράς</span>
+                            {% elif medical_case %}
+                                <span class="badge bg-info text-dark">Στην Αναφορά</span>
+                            {% elif soldier.status == 'Active' %}
                                 <span class="badge bg-success">Ενεργός</span>
                             {% else %}
                                 <span class="badge bg-warning">{{ soldier.status }}</span>
@@ -96,10 +100,16 @@
                             {% endif %}
                         </td>
                         <td class="small">
+                            {% if medical_case %}
+                                <strong>{{ 'Ιατρείο' if medical_case.location == 'Infirmary' else 'Ασθενής στο Τάγμα' }}</strong><br>
+                                <span>Ασθένεια: {{ medical_case.illness }}</span><br>
+                                <span>{{ medical_case.report_status }}</span>
+                                {% if medical_case.notes %}<br><small>{{ medical_case.notes }}</small>{% endif %}
+                            {% endif %}
                             {% if soldier.exemption_no_duty %}
                                 <span class="badge bg-danger">Άνευ Υπηρεσίας</span><br>
                             {% endif %}
-                            {% if soldier.medical_category %}
+                            {% if soldier.medical_category and not medical_case %}
                                 {{ soldier.medical_category }}
                             {% endif %}
                             {% if soldier.exemption_no_shaving %}
@@ -123,7 +133,8 @@
                     <li><strong>Σύνολο Στρατιωτών:</strong> {{ soldiers|length }}</li>
                     <li><strong>Ενεργοί:</strong> {{ soldiers|selectattr('status', 'equalto', 'Active')|list|length }}</li>
                     <li><strong>Σε Υπηρεσία:</strong> {{ soldier_duties|length }}</li>
-                    <li><strong>Διαθέσιμοι:</strong> {{ soldiers|length - soldier_duties|length }}</li>
+                    <li><strong>Συμμετέχουν στην Αναφορά:</strong> {{ soldiers|length - medical_absent_count }}</li>
+                    <li><strong>Εκτός Αναφοράς λόγω Ασθένειας:</strong> {{ medical_absent_count }}</li>
                 </ul>
             </div>
             <div class="col-md-6">

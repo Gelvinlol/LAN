@@ -92,8 +92,7 @@
                         <tr>
                             <th>Ημερομηνία</th>
                             <th>Τύπος Υπηρεσίας</th>
-                            <th>ΝΟΥΜΕΡΟ</th>
-                            <th>Θέση στην Ομάδα</th>
+                            <th>Νούμερο και ωράρια</th>
                             <th>Σημειώσεις</th>
                         </tr>
                     </thead>
@@ -111,14 +110,9 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <span class="badge bg-secondary">Βάρδια {{ assignment.shift_number }}</span>
-                                {% set time_slot = assignment.get_time_slot() %}
-                                {% if time_slot %}
-                                <div class="text-muted small">{{ time_slot.start_time }} - {{ time_slot.end_time }}</div>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="badge bg-info">{{ assignment.position_in_team }}</span>
+                                <span class="badge bg-secondary">Νο {{ assignment.service_number }}</span>
+                                <span class="badge bg-info">Άτομο {{ assignment.position_in_team }}/{{ assignment.duty_type.get_staff_count(assignment.service_number) }}</span>
+                                <div class="text-muted small mt-1">{% for start_at, end_at in assignment.get_shift_occurrences() %}{{ start_at.strftime('%H:%M') }}–{{ end_at.strftime('%H:%M') }}{% if start_at.date() != assignment.duty_date %} (+1){% endif %}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>
                             </td>
                             <td>
                                 <small>{{ assignment.notes or '-' }}</small>

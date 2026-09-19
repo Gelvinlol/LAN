@@ -117,11 +117,11 @@
         }
 
         .duty-sheet-table th:nth-child(1) { width: 7%; }
-        .duty-sheet-table th:nth-child(2) { width: 15%; }
-        .duty-sheet-table th:nth-child(3) { width: 25%; }
-        .duty-sheet-table th:nth-child(4) { width: 17%; }
+        .duty-sheet-table th:nth-child(2) { width: 29%; }
+        .duty-sheet-table th:nth-child(3) { width: 23%; }
+        .duty-sheet-table th:nth-child(4) { width: 15%; }
         .duty-sheet-table th:nth-child(5) { width: 7%; }
-        .duty-sheet-table th:nth-child(6) { width: 29%; }
+        .duty-sheet-table th:nth-child(6) { width: 19%; }
         .signature-cell { height: 3.5mm !important; }
 
         .signature-section {
@@ -271,28 +271,28 @@
                         <thead class="table-light">
                             <tr>
                                 <th>Νούμερο</th>
-                                <th>Χρονικό Διάστημα</th>
+                                <th>Ωράρια αριθμού</th>
                                 <th>Στρατιώτης</th>
                                 <th>Στρατιωτικός Αριθμός</th>
-                                <th>Θέση</th>
+                                <th>Άτομο</th>
                                 <th>Υπογραφή</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for shift_name, assignments in shifts.items() %}
+                            {% for service_number, assignments in shifts.items() %}
                                 {% for assignment_data in assignments %}
                                 <tr>
                                     {% if loop.index == 1 %}
                                     <td rowspan="{{ assignments|length }}" class="align-middle text-center">
-                                        <strong>{{ shift_name.replace('Shift ', '') }}ο</strong>
+                                        <strong>Νο {{ service_number }}</strong>
                                     </td>
                                     <td rowspan="{{ assignments|length }}" class="align-middle text-center">
-                                        <strong>{{ assignment_data.time_info }}</strong>
+                                        <strong>{% for start_at, end_at in assignment_data.shift_occurrences %}{{ start_at.strftime('%H:%M') }}–{{ end_at.strftime('%H:%M') }}{% if start_at.date() != sheet_date %} (+1){% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</strong>
                                     </td>
                                     {% endif %}
                                     <td>{{ assignment_data.soldier.name }}</td>
                                     <td class="text-center">{{ assignment_data.soldier.military_id }}</td>
-                                    <td class="text-center">{{ assignment_data.assignment.position_in_team }}</td>
+                                    <td class="text-center">{{ assignment_data.assignment.position_in_team }}/{{ assignment_data.assignment.duty_type.get_staff_count(service_number) }}</td>
                                     <td class="signature-cell"></td>
                                 </tr>
                                 {% endfor %}
@@ -373,9 +373,9 @@
                 <div class="col-md-4">
                     <h6>Χρονικές Περίοδοι:</h6>
                     <ul class="list-unstyled small">
-                        <li>ΝΟΥΜΕΡΟ 1: Πρωί, Μεσημέρι, Βράδυ</li>
-                        <li>ΝΟΥΜΕΡΟ 2: Απόγευμα, Νύχτα, Πρωί</li>
-                        <li>ΝΟΥΜΕΡΟ 3: Βράδυ, Νύχτα, Μεσημέρι</li>
+                        <li><strong>Νο 1:</strong> 15:00–18:00 · 00:00–02:00 · 06:00–09:00</li>
+                        <li><strong>Νο 2:</strong> 18:00–21:00 · 02:00–04:00 · 09:00–12:00</li>
+                        <li><strong>Νο 3:</strong> 21:00–00:00 · 04:00–06:00 · 12:00–15:00</li>
                     </ul>
                 </div>
                 <div class="col-md-4">

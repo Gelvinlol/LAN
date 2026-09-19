@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Νούμερα & Ωράρια | {{ duty_type.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <div class="text-uppercase text-muted small fw-bold mb-1">Διαμόρφωση Υπηρεσίας</div>
+        <h1 class="mb-1"><i class="fas fa-clock me-2"></i>Νούμερα & Ωράρια</h1>
+        <p class="text-muted mb-0">{{ duty_type.name }}</p>
+    </div>
+    <a href="{{ url_for('duties') }}" class="btn btn-secondary"><i class="fas fa-arrow-left me-1"></i>Πίσω στις Υπηρεσίες</a>
+</div>
+
+<div class="alert alert-info">
+    <i class="fas fa-circle-info me-1"></i>
+    Κάθε άτομο ενός αριθμού εκτελεί όλα τα ωράριά του. Ώρες 00:00–14:59 υπολογίζονται στην επόμενη ημερολογιακή ημέρα του επιχειρησιακού 24ώρου.
+</div>
+
+<form method="POST" id="numbers-form">
+    <div class="row g-4" id="numbers-container">
+        {% for config in configured %}
+        <div class="col-lg-6 number-column">
+            <section class="card h-100 number-card" data-number="{{ config.number }}">
+                <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-primary number-badge">Νο {{ config.number }}</span>
+                        <input type="hidden" name="service_number" value="{{ config.number }}" class="service-number-input">
+                        <strong>Ομάδα ωραρίων</strong>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-number"><i class="fas fa-trash me-1"></i>Αφαίρεση</button>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-end mb-3">
+                        <div class="col-sm-6">
+                            <label class="form-label">Άτομα στο Νο {{ config.number }}</label>
+                            <input type="number" min="1" step="1" class="form-control staff-count" name="number_{{ config.number }}_staff_count" value="{{ config.staff_count }}" required>
+                        </div>
+                        <div class="col-sm-6"><div class="form-text mt-2">Όλοι εκτελούν τα ίδια ωράρια του αριθμού.</div></div>
+                    </div>
+                    <div class="shift-container">
+                        {% for shift in config.shifts %}
+                        <div class="shift-row border rounded p-2 mb-2">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-5"><label class="form-label small">Από</label><input type="time" class="form-control shift-start" name="number_{{ config.number }}_start" value="{{ shift.start }}" required></div>
+                                <div class="col-5"><label class="form-label small">Έως</label><input type="time" class="form-control shift-end" name="number_{{ config.number }}_end" value="{{ shift.end }}" required></div>
+                                <div class="col-2"><button type="button" class="btn btn-outline-danger w-100 remove-shift" title="Αφαίρεση"><i class="fas fa-xmark"></i></button></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <button type="button" class="btn btn-outline-primary btn-sm add-shift w-100"><i class="fas fa-plus me-1"></i>Προσθήκη ωραρίου</button>
+                </div>
+            </section>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="d-flex flex-wrap justify-content-between gap-2 mt-4">
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-success" id="add-number"><i class="fas fa-plus me-1"></i>Νέο Νούμερο</button>
+            <button type="submit" name="action" value="reset-default" class="btn btn-outline-secondary" onclick="return confirm('Να διαγραφούν οι αλλαγές και να επανέλθει το πρότυπο Νο 1–3;');"><i class="fas fa-rotate-left me-1"></i>Επαναφορά Προτύπου</button>
+        </div>
+        <button type="submit" class="btn btn-primary px-4"><i class="fas fa-floppy-disk me-1"></i>Αποθήκευση Ωραρίων</button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const numbersContainer = document.getElementById('numbers-container');
+
+function shiftRow(number, start = '', end = '') {
+    const row = document.createElement('div');
+    row.className = 'shift-row border rounded p-2 mb-2';
+    row.innerHTML = `<div class="row g-2 align-items-end">
+        <div class="col-5"><label class="form-label small">Από</label><input type="time" class="form-control shift-start" name="number_${number}_start" value="${start}" required></div>
+        <div class="col-5"><label class="form-label small">Έως</label><input type="time" class="form-control shift-end" name="number_${number}_end" value="${end}" required></div>
+        <div class="col-2"><button type="button" class="btn btn-outline-danger w-100 remove-shift" title="Αφαίρεση"><i class="fas fa-xmark"></i></button></div>
+    </div>`;
+    return row;
+}
+
+function wireCard(card) {
+    const number = card.dataset.number;
+    const container = card.querySelector('.shift-container');
+    card.querySelector('.add-shift').addEventListener('click', () => {
+        container.appendChild(shiftRow(number));
+    });
+    card.addEventListener('click', event => {
+        const removeShift = event.target.closest('.remove-shift');
+        if (removeShift) removeShift.closest('.shift-row').remove();
+        const removeNumber = event.target.closest('.remove-number');
+        if (removeNumber && confirm(`Να αφαιρεθεί ολόκληρο το Νο ${number};`)) {
+            card.closest('.number-column').remove();
+        }
+    });
+}
+
+function numberCard(number) {
+    const column = document.createElement('div');
+    column.className = 'col-lg-6 number-column';
+    column.innerHTML = `<section class="card h-100 number-card" data-number="${number}">
+        <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2"><span class="badge bg-primary number-badge">Νο ${number}</span><input type="hidden" name="service_number" value="${number}" class="service-number-input"><strong>Ομάδα ωραρίων</strong></div>
+            <button type="button" class="btn btn-sm btn-outline-danger remove-number"><i class="fas fa-trash me-1"></i>Αφαίρεση</button>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-end mb-3"><div class="col-sm-6"><label class="form-label">Άτομα στο Νο ${number}</label><input type="number" min="1" step="1" class="form-control staff-count" name="number_${number}_staff_count" value="1" required></div><div class="col-sm-6"><div class="form-text mt-2">Όλοι εκτελούν τα ίδια ωράρια του αριθμού.</div></div></div>
+            <div class="shift-container"></div>
+        </div>
+        <div class="card-footer bg-transparent"><button type="button" class="btn btn-outline-primary btn-sm add-shift w-100"><i class="fas fa-plus me-1"></i>Προσθήκη ωραρίου</button></div>
+    </section>`;
+    const card = column.querySelector('.number-card');
+    card.querySelector('.shift-container').appendChild(shiftRow(number));
+    wireCard(card);
+    return column;
+}
+
+document.querySelectorAll('.number-card').forEach(wireCard);
+document.getElementById('add-number').addEventListener('click', () => {
+    const used = [...document.querySelectorAll('.service-number-input')]
+        .map(input => Number(input.value));
+    const next = used.length ? Math.max(...used) + 1 : 1;
+    numbersContainer.appendChild(numberCard(next));
+});
+
+document.getElementById('numbers-form').addEventListener('submit', event => {
+    if (event.submitter && event.submitter.value === 'reset-default') return;
+    if (!document.querySelector('.number-card')) {
+        event.preventDefault();
+        alert('Πρέπει να υπάρχει τουλάχιστον ένα νούμερο.');
+        return;
+    }
+    for (const card of document.querySelectorAll('.number-card')) {
+        if (!card.querySelector('.shift-row')) {
+            event.preventDefault();
+            alert(`Το Νο ${card.dataset.number} χρειάζεται τουλάχιστον ένα ωράριο.`);
+            return;
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -23,8 +23,7 @@
                         <tr>
                             <th>Όνομα Υπηρεσίας</th>
                             <th>Περιγραφή</th>
-                            <th>Μέγεθος Ομάδας</th>
-                            <th>ΝΟΥΜΕΡΟ / Ημέρα</th>
+                            <th>Στελέχωση 24ώρου</th>
                             <th>Ενεργή</th>
                             <th>Ενέργειες</th>
                         </tr>
@@ -34,13 +33,12 @@
                         <tr>
                             <td>
                                 <strong>{{ duty_type.name }}</strong>
+                                {% if duty_type.requires_weapon %}<div class="mt-1"><span class="badge bg-danger"><i class="fas fa-gun me-1"></i>Ένοπλη υπηρεσία</span></div>{% endif %}
                             </td>
                             <td>{{ duty_type.description or '-' }}</td>
                             <td>
-                                <span class="badge bg-info">{{ duty_type.team_size }} άτομα</span>
-                            </td>
-                            <td>
-                                <span class="badge bg-secondary">{{ duty_type.shifts_per_day }} ΝΟΥΜΕΡΟ</span>
+                                {% for service_number in duty_type.get_service_numbers() %}<span class="badge bg-secondary me-1">Νο {{ service_number }} × {{ duty_type.get_staff_count(service_number) }}</span>{% endfor %}
+                                <div class="text-muted small mt-1">Ο αριθμός μετά το × είναι τα απαιτούμενα άτομα.</div>
                             </td>
                             <td>
                                 {% if duty_type.is_active %}
@@ -51,6 +49,7 @@
                             </td>
                             <td>
                                 <div class="btn-group" role="group">
+                                    <a href="{{ url_for('configure_duty_numbers', duty_id=duty_type.id) }}" class="btn btn-sm btn-outline-info" title="Νούμερα και ωράρια"><i class="fas fa-clock"></i></a>
                                     <button type="button" class="btn btn-sm btn-outline-primary" 
                                             onclick="editDutyType({{ duty_type.id }})">
                                         <i class="fas fa-edit"></i>
@@ -81,44 +80,19 @@
     </div>
 </div>
 
-<!-- Default Duties Info -->
+<!-- Service-number model -->
 <div class="card mt-4">
     <div class="card-header">
         <h5 class="mb-0">
-            <i class="fas fa-info-circle me-2"></i>Προεπιλεγμένες Υπηρεσίες
+            <i class="fas fa-clock me-2"></i>Σταθερά Νούμερα Υπηρεσίας
         </h5>
     </div>
     <div class="card-body">
-        <p class="text-muted mb-3">Οι παρακάτω υπηρεσίες προστέθηκαν αυτόματα κατά την εκκίνηση του συστήματος:</p>
+        <p class="text-muted mb-3">Κάθε υπηρεσία μπορεί να έχει όσα νούμερα χρειάζονται και διαφορετικό αριθμό ατόμων ανά νούμερο. Κάθε ξεχωριστό πόστο (π.χ. Πύλη Α και Πύλη Β) καταχωρίζεται ως ξεχωριστή υπηρεσία. Το παρακάτω είναι το προεπιλεγμένο πρότυπο και μπορεί να αλλάξει ανά υπηρεσία:</p>
         <div class="row">
-            <div class="col-md-6">
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <strong>Περίπολος</strong>
-                        <span class="text-muted">2 άτομα, 3 ΝΟΥΜΕΡΟ</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <strong>Κεντρική Πύλη</strong>
-                        <span class="text-muted">2 άτομα, 3 ΝΟΥΜΕΡΟ</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <strong>Θαλαμοφύλακας</strong>
-                        <span class="text-muted">1 άτομο, 3 ΝΟΥΜΕΡΟ</span>
-                    </li>
-                </ul>
-            </div>
-            <div class="col-md-6">
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <strong>Μαγειρεία</strong>
-                        <span class="text-muted">3 άτομα, 1 ΝΟΥΜΕΡΟ</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <strong>Λάντζα</strong>
-                        <span class="text-muted">2 άτομα, 1 ΝΟΥΜΕΡΟ</span>
-                    </li>
-                </ul>
-            </div>
+            <div class="col-md-4 mb-2"><div class="border rounded p-3 h-100"><strong>Νο 1</strong><div class="small text-muted mt-2">15:00–18:00<br>00:00–02:00<br>06:00–09:00</div></div></div>
+            <div class="col-md-4 mb-2"><div class="border rounded p-3 h-100"><strong>Νο 2</strong><div class="small text-muted mt-2">18:00–21:00<br>02:00–04:00<br>09:00–12:00</div></div></div>
+            <div class="col-md-4 mb-2"><div class="border rounded p-3 h-100"><strong>Νο 3</strong><div class="small text-muted mt-2">21:00–00:00<br>04:00–06:00<br>12:00–15:00</div></div></div>
         </div>
     </div>
 </div>
@@ -143,34 +117,15 @@
                         <textarea class="form-control" id="description" name="description" rows="2"></textarea>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="team_size" class="form-label">Μέγεθος Ομάδας</label>
-                                <select class="form-select" id="team_size" name="team_size">
-                                    <option value="1">1 άτομο</option>
-                                    <option value="2" selected>2 άτομα</option>
-                                    <option value="3">3 άτομα</option>
-                                    <option value="4">4 άτομα</option>
-                                    <option value="5">5 άτομα</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="shifts_per_day" class="form-label">ΝΟΥΜΕΡΟ / Ημέρα</label>
-                                <select class="form-select" id="shifts_per_day" name="shifts_per_day">
-                                    <option value="1">1 ΝΟΥΜΕΡΟ (Όλη μέρα)</option>
-                                    <option value="3" selected>3 ΝΟΥΜΕΡΟ (8ωρες)</option>
-                                </select>
-                            </div>
-                        </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="requires_weapon" name="requires_weapon" value="yes">
+                        <label class="form-check-label fw-bold" for="requires_weapon">Απαιτεί όπλο</label>
+                        <div class="form-text">Θα επιλέγονται μόνο στρατιώτες Ι1, Ι2 ή Ι3 Ένοπλο. Ι3 Άοπλο και Ι4 αποκλείονται.</div>
                     </div>
 
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle me-2"></i>
-                        <strong>Σημείωση:</strong> Για υπηρεσίες με 3 ΝΟΥΜΕΡΟ, θα δημιουργηθούν αυτόματα χρονικές περίοδοι 
-                        όπως αυτές του Περίπολου. Για 1 ΝΟΥΜΕΡΟ, θα οριστεί χρονική περίοδος 08:00-18:00.
+                        <strong>Στελέχωση:</strong> Αρχικά δημιουργούνται Νο 1, Νο 2 και Νο 3. Μετά την αποθήκευση θα ανοίξει η διαμόρφωση των ωραρίων.
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -205,29 +160,13 @@
                         <textarea class="form-control" id="edit_description" name="description" rows="2"></textarea>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="edit_team_size" class="form-label">Μέγεθος Ομάδας</label>
-                                <select class="form-select" id="edit_team_size" name="team_size">
-                                    <option value="1">1 άτομο</option>
-                                    <option value="2">2 άτομα</option>
-                                    <option value="3">3 άτομα</option>
-                                    <option value="4">4 άτομα</option>
-                                    <option value="5">5 άτομα</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="edit_shifts_per_day" class="form-label">ΝΟΥΜΕΡΟ / Ημέρα</label>
-                                <select class="form-select" id="edit_shifts_per_day" name="shifts_per_day">
-                                    <option value="1">1 ΝΟΥΜΕΡΟ (Όλη μέρα)</option>
-                                    <option value="3">3 ΝΟΥΜΕΡΟ (8ωρες)</option>
-                                </select>
-                            </div>
-                        </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="edit_requires_weapon" name="requires_weapon" value="yes">
+                        <label class="form-check-label fw-bold" for="edit_requires_weapon">Απαιτεί όπλο</label>
+                        <div class="form-text">Αποκλείονται αυτόματα Ι3 Άοπλο και Ι4.</div>
                     </div>
+
+                    <div class="alert alert-info mb-0">Τα νούμερα, τα άτομα και τα ωράρια ρυθμίζονται ξεχωριστά από το κουμπί με το ρολόι.</div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ακύρωση</button>
@@ -251,8 +190,7 @@ function editDutyType(dutyTypeId) {
             document.getElementById('edit_duty_id').value = data.id;
             document.getElementById('edit_name').value = data.name;
             document.getElementById('edit_description').value = data.description || '';
-            document.getElementById('edit_team_size').value = data.team_size;
-            document.getElementById('edit_shifts_per_day').value = data.shifts_per_day;
+            document.getElementById('edit_requires_weapon').checked = data.requires_weapon;
             
             // Show the modal
             const modal = new bootstrap.Modal(document.getElementById('editDutyModal'));

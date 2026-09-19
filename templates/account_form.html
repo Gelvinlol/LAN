@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Επεξεργασία' if account else 'Νέος Λογαριασμός' }} | Σύστημα Διοίκησης Μονάδας{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <div class="text-uppercase text-muted small fw-bold mb-1">Λογαριασμοί & Δικαιώματα</div>
+        <h1 class="mb-0"><i class="fas {{ 'fa-user-pen' if account else 'fa-user-plus' }} me-2"></i>{{ 'Επεξεργασία Λογαριασμού' if account else 'Νέος Λογαριασμός' }}</h1>
+    </div>
+    <a href="{{ url_for('accounts') }}" class="btn btn-secondary"><i class="fas fa-arrow-left me-1"></i>Πίσω</a>
+</div>
+
+<form method="POST">
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card h-100">
+                <div class="card-header"><h5 class="mb-0"><i class="fas fa-id-badge me-2"></i>Στοιχεία Λογαριασμού</h5></div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="full_name">Ονομασία λογαριασμού *</label>
+                        <input class="form-control" id="full_name" name="full_name" maxlength="100" value="{{ request.form.get('full_name', account.full_name if account else '') }}" placeholder="π.χ. Γραφείο Αρχιλοχία" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="username">Όνομα χρήστη *</label>
+                        <input class="form-control" id="username" name="username" maxlength="80" autocomplete="off" value="{{ request.form.get('username', account.username if account else '') }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="role">Ρόλος / Γραφείο *</label>
+                        <input class="form-control" id="role" name="role" maxlength="50" list="role-options" value="{{ request.form.get('role', account.role if account else '') }}" {% if account and account.id == current_user.id %}readonly{% endif %} placeholder="π.χ. Γραφείο Αρχιλοχία" required>
+                        <datalist id="role-options"><option value="Γραφείο Αρχιλοχία"><option value="Υπασπιστήριο"><option value="ΑΥΔΜ"><option value="Διοικητής"></datalist>
+                        {% if account and account.id == current_user.id %}<div class="form-text">Δεν μπορείς να αλλάξεις τον ρόλο του δικού σου λογαριασμού.</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="password">{{ 'Νέος κωδικός' if account else 'Κωδικός' }} {{ '' if account else '*' }}</label>
+                        <input type="password" class="form-control" id="password" name="password" minlength="8" autocomplete="new-password" {% if not account %}required{% endif %}>
+                        <div class="form-text">Τουλάχιστον 8 χαρακτήρες.{% if account %} Άφησέ το κενό για να παραμείνει ο υπάρχων.{% endif %}</div>
+                    </div>
+                    {% if account %}
+                    <div class="form-check form-switch mt-4">
+                        <input class="form-check-input" type="checkbox" id="active" name="active" value="yes" {% if account.active %}checked{% endif %} {% if account.id == current_user.id %}disabled{% endif %}>
+                        <label class="form-check-label" for="active">Ενεργός λογαριασμός</label>
+                    </div>
+                    {% if account.id == current_user.id %}<div class="form-text">Ο τρέχων λογαριασμός δεν μπορεί να απενεργοποιηθεί.</div>{% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div><h5 class="mb-0"><i class="fas fa-shield-halved me-2"></i>Δικαιώματα</h5><small class="text-muted">Ο Διοικητής έχει πάντα πλήρη πρόσβαση.</small></div>
+                    <div><button type="button" class="btn btn-sm btn-outline-primary" id="select-all">Όλα</button> <button type="button" class="btn btn-sm btn-outline-secondary" id="clear-all">Κανένα</button></div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% for group_name, permissions in permission_groups %}
+                        <div class="col-md-6">
+                            <fieldset class="border rounded p-3 h-100">
+                                <legend class="float-none w-auto px-2 fs-6 fw-bold">{{ group_name }}</legend>
+                                {% for permission_key, label in permissions %}
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input permission-check" type="checkbox" name="permissions" value="{{ permission_key }}" id="permission-{{ permission_key|replace('.', '-') }}" {% if permission_key in selected_permissions or permission_key in request.form.getlist('permissions') %}checked{% endif %}>
+                                    <label class="form-check-label" for="permission-{{ permission_key|replace('.', '-') }}">{{ label }}</label>
+                                </div>
+                                {% endfor %}
+                            </fieldset>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="d-flex justify-content-end gap-2 mt-4">
+        <a href="{{ url_for('accounts') }}" class="btn btn-secondary">Ακύρωση</a>
+        <button type="submit" class="btn btn-primary px-4"><i class="fas fa-floppy-disk me-1"></i>{{ 'Αποθήκευση Αλλαγών' if account else 'Δημιουργία Λογαριασμού' }}</button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const permissionChecks = document.querySelectorAll('.permission-check');
+document.getElementById('select-all').addEventListener('click', () => permissionChecks.forEach(item => item.checked = true));
+document.getElementById('clear-all').addEventListener('click', () => permissionChecks.forEach(item => item.checked = false));
+</script>
+{% endblock %}

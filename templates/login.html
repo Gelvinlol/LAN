@@ -22,14 +22,11 @@
             <div class="corner-mark corner-mark--top" aria-hidden="true"></div>
             <div class="corner-mark corner-mark--bottom" aria-hidden="true"></div>
 
-            <div class="unit-mark" aria-hidden="true">
-                <svg viewBox="0 0 96 112" role="img">
-                    <path class="shield" d="M48 4 88 18v34c0 26-16 45-40 56C24 97 8 78 8 52V18L48 4Z"/>
-                    <path class="shield-inner" d="M48 14 78 25v27c0 19-11 34-30 45-19-11-30-26-30-45V25L48 14Z"/>
-                    <path class="spear" d="m48 25 5 13-5 29-5-29 5-13Z"/>
-                    <path class="wings" d="M25 45h17l6 8 6-8h17l-12 11H37L25 45Z"/>
-                    <circle class="unit-dot" cx="48" cy="75" r="4"/>
-                </svg>
+            <div class="unit-mark">
+                <div class="emblem-pair" aria-label="Εμβλήματα μονάδας">
+                    <img src="{{ url_for('static', filename='images/ges-emblem.png') }}" alt="Έμβλημα Γενικού Επιτελείου Στρατού">
+                    <img src="{{ url_for('static', filename='images/chronou-feidou-emblem.png') }}" alt="Έμβλημα Χρόνου Φείδου">
+                </div>
                 <span class="unit-code">ΜΟΝΑΔΑ // 01</span>
             </div>
 
@@ -39,26 +36,6 @@
                 <p class="mission-lead">Ενιαίο σύστημα διαχείρισης προσωπικού, υπηρεσιών και μέσων της μονάδας.</p>
             </div>
 
-            <dl class="system-status" aria-label="Κατάσταση συστήματος">
-                <div>
-                    <dt><span class="status-light"></span> Κατάσταση</dt>
-                    <dd>Ενεργό</dd>
-                </div>
-                <div>
-                    <dt>Περιβάλλον</dt>
-                    <dd>Τοπικό Δίκτυο</dd>
-                </div>
-                <div>
-                    <dt>Κανάλι</dt>
-                    <dd>LAN / 01</dd>
-                </div>
-            </dl>
-
-            <div class="coordinate-line" aria-hidden="true">
-                <span>GRID REF // LOCAL</span>
-                <span>ZONE // INTERNAL</span>
-                <span>AUTH NODE 01</span>
-            </div>
         </section>
 
         <section class="access-panel" aria-labelledby="access-title">

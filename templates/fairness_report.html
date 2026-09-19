@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Αναφορά Δικαιοσύνης Υπηρεσιών{% endblock %}
+
+{% block extra_head %}
+<style>
+@media print {
+    .report-controls, .no-print { display: none !important; }
+    .fairness-table { font-size: 9pt; }
+    .card { break-inside: avoid; box-shadow: none !important; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <div class="text-uppercase text-muted small fw-bold mb-1">Οριστικοποιημένα Προγράμματα</div>
+        <h1 class="mb-1"><i class="fas fa-scale-balanced me-2"></i>Αναφορά Δικαιοσύνης Υπηρεσιών</h1>
+        <p class="text-muted mb-0">Σύγκριση επιβάρυνσης, νυχτερινών υπηρεσιών και υπηρεσιών σε Σαββατοκύριακα/αργίες.</p>
+    </div>
+    <button class="btn btn-outline-primary no-print" type="button" onclick="window.print()"><i class="fas fa-print me-1"></i>Εκτύπωση</button>
+</div>
+
+<div class="card mb-4 report-controls">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-4"><label class="form-label" for="start_date">Από</label><input class="form-control" type="date" id="start_date" name="start_date" value="{{ start_date.isoformat() }}" required></div>
+            <div class="col-md-4"><label class="form-label" for="end_date">Έως</label><input class="form-control" type="date" id="end_date" name="end_date" value="{{ end_date.isoformat() }}" required></div>
+            <div class="col-md-4"><button class="btn btn-primary w-100" type="submit"><i class="fas fa-filter me-1"></i>Εφαρμογή Φίλτρου</button></div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl"><div class="card h-100"><div class="card-body"><div class="text-muted small">Υπηρεσίες</div><div class="fs-3 fw-bold">{{ report.total_assignments }}</div></div></div></div>
+    <div class="col-sm-6 col-xl"><div class="card h-100"><div class="card-body"><div class="text-muted small">Στρατιώτες</div><div class="fs-3 fw-bold">{{ report.total_soldiers }}</div></div></div></div>
+    <div class="col-sm-6 col-xl"><div class="card h-100"><div class="card-body"><div class="text-muted small">Νυχτερινές</div><div class="fs-3 fw-bold">{{ report.total_night }}</div><small class="text-muted">22:00–06:00</small></div></div></div>
+    <div class="col-sm-6 col-xl"><div class="card h-100"><div class="card-body"><div class="text-muted small">Σ/Κ & αργίες</div><div class="fs-3 fw-bold">{{ report.total_special }}</div></div></div></div>
+    <div class="col-sm-6 col-xl"><div class="card h-100"><div class="card-body"><div class="text-muted small">Μέσος χρόνος ανάπαυσης</div><div class="fs-3 fw-bold">{{ report.average_rest_hours if report.average_rest_hours is not none else '—' }}</div><small class="text-muted">ώρες</small></div></div></div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header"><h5 class="mb-0"><i class="fas fa-users-viewfinder me-2"></i>Ανάλυση ανά στρατιώτη</h5></div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 fairness-table">
+            <thead><tr><th>Στρατιώτης</th><th class="text-center">Σύνολο</th><th class="text-center">Νυχτερινές</th><th class="text-center">Σ/Κ & αργίες</th><th class="text-center">Μ.Ο. ανάπαυσης</th><th>Ανά τύπο υπηρεσίας</th><th>Επιβάρυνση</th></tr></thead>
+            <tbody>
+                {% for row in report.rows %}
+                <tr class="{{ 'table-warning' if row.burden == 'high' else '' }}">
+                    <td><strong>{{ row.soldier.name }}</strong><div class="small text-muted">{{ row.soldier.military_id }}</div></td>
+                    <td class="text-center"><span class="badge bg-primary">{{ row.total }}</span></td>
+                    <td class="text-center">{{ row.night }}</td>
+                    <td class="text-center">{{ row.special }}</td>
+                    <td class="text-center">{% if row.average_rest_hours is not none %}{{ row.average_rest_hours }} ώρες{% else %}—{% endif %}</td>
+                    <td>{% for duty_name, count in row.duty_counts.items() %}<span class="badge bg-light text-dark border me-1 mb-1">{{ duty_name }} ×{{ count }}</span>{% endfor %}</td>
+                    <td>
+                        {% if row.burden == 'high' %}<span class="badge bg-warning text-dark">Αυξημένη</span>
+                        {% elif row.burden == 'low' %}<span class="badge bg-info text-dark">Χαμηλότερη</span>
+                        {% else %}<span class="badge bg-success">Ισορροπημένη</span>{% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center text-muted py-5">Δεν υπάρχουν οριστικοποιημένες υπηρεσίες στο επιλεγμένο διάστημα.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if report.duty_type_totals %}
+<div class="card">
+    <div class="card-header"><h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Κατανομή ανά τύπο υπηρεσίας</h5></div>
+    <div class="card-body">
+        {% set maximum = report.duty_type_totals[0][1] %}
+        {% for duty_name, count in report.duty_type_totals %}
+        <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1"><span>{{ duty_name }}</span><strong>{{ count }}</strong></div>
+            <div class="progress" style="height: 8px"><div class="progress-bar" style="width: {{ (count * 100 / maximum)|round|int }}%"></div></div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="alert alert-light border mt-4 small text-muted">
+    Η ένδειξη επιβάρυνσης συνδυάζει το σύνολο υπηρεσιών με πρόσθετο βάρος για νυχτερινές και για Σαββατοκύριακα/ελληνικές αργίες. Τα προσχέδια δεν υπολογίζονται.
+</div>
+{% endblock %}

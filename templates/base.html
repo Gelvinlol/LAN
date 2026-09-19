@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#f5f6f1">
     <title>{% block title %}Σύστημα Διοίκησης Μονάδας{% endblock %}</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='vendor/fontawesome/css/all.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
     {% block extra_head %}{% endblock %}
 </head>
@@ -16,10 +16,10 @@
     <nav class="navbar navbar-expand-xl military-nav">
         <div class="container-fluid nav-container">
             <a class="navbar-brand" href="{{ url_for('index') }}" aria-label="Αρχική σελίδα">
-                <span class="brand-mark"><i class="fas fa-shield-halved"></i></span>
+                <span class="brand-mark"><img src="{{ url_for('static', filename='images/ges-emblem.png') }}" alt="Έμβλημα Γενικού Επιτελείου Στρατού"></span>
                 <span class="brand-copy">
-                    <small>ΣΔΜ // 01</small>
-                    <strong>Διοίκηση Μονάδας</strong>
+                    <small>{{ unit_identity.unit_code if unit_identity and unit_identity.unit_code else 'ΣΔΜ // 01' }}</small>
+                    <strong title="{{ unit_identity.unit_name if unit_identity and unit_identity.unit_name else 'Διοίκηση Μονάδας' }}">{{ unit_identity.unit_name if unit_identity and unit_identity.unit_name else 'Διοίκηση Μονάδας' }}</strong>
                 </span>
             </a>
 
@@ -32,29 +32,33 @@
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint == 'index' }}" href="{{ url_for('index') }}"><i class="fas fa-table-cells-large"></i><span>Επισκόπηση</span></a>
                     </li>
-                    <li class="nav-item">
+                    {% if current_user.has_permission('soldiers.view') %}<li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint in ['soldiers', 'add_soldier', 'add_soldier_interview', 'soldier_profile', 'soldier_history', 'edit_soldier'] }}" href="{{ url_for('soldiers') }}"><i class="fas fa-users"></i><span>Προσωπικό</span></a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint in ['duties', 'get_duty_type', 'edit_duty_type', 'add_duty_type'] }}" href="{{ url_for('duties') }}"><i class="fas fa-clipboard-check"></i><span>Υπηρεσίες</span></a>
-                    </li>
-                    <li class="nav-item">
+                    </li>{% endif %}
+                    {% if current_user.has_permission('duties.view') %}<li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint in ['duties', 'get_duty_type', 'edit_duty_type', 'add_duty_type', 'configure_duty_numbers'] }}" href="{{ url_for('duties') }}"><i class="fas fa-clipboard-check"></i><span>Υπηρεσίες</span></a>
+                    </li>{% endif %}
+                    {% if current_user.has_permission('schedule.view') %}<li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint in ['schedule', 'generate_schedule', 'finalize_schedule'] }}" href="{{ url_for('schedule') }}"><i class="fas fa-calendar-days"></i><span>Πρόγραμμα</span></a>
-                    </li>
-                    <li class="nav-item">
+                    </li>{% endif %}
+                    {% if current_user.has_permission('equipment.view') %}<li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint == 'equipment' }}" href="{{ url_for('equipment') }}"><i class="fas fa-toolbox"></i><span>Εξοπλισμός</span></a>
-                    </li>
-                    <li class="nav-item">
+                    </li>{% endif %}
+                    {% if current_user.has_permission('leaves.view') %}<li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint in ['leaves', 'add_leave'] }}" href="{{ url_for('leaves') }}"><i class="fas fa-person-walking-arrow-right"></i><span>Άδειες</span></a>
-                    </li>
-                    <li class="nav-item dropdown nav-more">
-                        <a class="nav-link dropdown-toggle {{ 'active' if request.endpoint in ['duty_sheet', 'prints', 'print_roster', 'print_custom', 'staffing_alerts'] }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="fas fa-ellipsis"></i><span>Περισσότερα</span></a>
+                    </li>{% endif %}
+                    {% if current_user.has_permission('medical.view') %}<li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint in ['medical_cases', 'add_medical_case'] }}" href="{{ url_for('medical_cases') }}"><i class="fas fa-briefcase-medical"></i><span>Ιατρείο</span></a>
+                    </li>{% endif %}
+                    {% if current_user.has_permission('prints.view') or current_user.has_permission('alerts.view') %}<li class="nav-item dropdown nav-more">
+                        <a class="nav-link dropdown-toggle {{ 'active' if request.endpoint in ['duty_sheet', 'prints', 'print_roster', 'print_custom', 'fairness_report', 'staffing_alerts'] }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="fas fa-ellipsis"></i><span>Περισσότερα</span></a>
                         <ul class="dropdown-menu nav-tools-menu">
-                            <li><a class="dropdown-item" href="{{ url_for('duty_sheet') }}"><i class="fas fa-file-lines"></i>Φύλλο Υπηρεσίας</a></li>
+                            {% if current_user.has_permission('prints.view') %}<li><a class="dropdown-item" href="{{ url_for('duty_sheet') }}"><i class="fas fa-file-lines"></i>Φύλλο Υπηρεσίας</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('prints') }}"><i class="fas fa-print"></i>Εκτυπώσεις</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('staffing_alerts') }}"><i class="fas fa-triangle-exclamation"></i>Ειδοποιήσεις</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('fairness_report') }}"><i class="fas fa-chart-column"></i>Αναφορά Δικαιοσύνης</a></li>{% endif %}
+                            {% if current_user.has_permission('alerts.view') %}<li><a class="dropdown-item" href="{{ url_for('staffing_alerts') }}"><i class="fas fa-triangle-exclamation"></i>Ειδοποιήσεις</a></li>{% endif %}
                         </ul>
-                    </li>
+                    </li>{% endif %}
                 </ul>
 
                 {% if current_user.is_authenticated %}
@@ -80,6 +84,10 @@
                             <li class="last-login"><i class="far fa-clock"></i> {{ current_user.last_login.strftime('%d/%m/%Y · %H:%M') }}</li>
                             {% endif %}
                             <li><hr class="dropdown-divider"></li>
+                            {% if current_user.is_commander() %}
+                            <li><a class="dropdown-item" href="{{ url_for('unit_settings') }}"><i class="fas fa-building-shield"></i>Στοιχεία Μονάδας</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('accounts') }}"><i class="fas fa-users-gear"></i>Λογαριασμοί & Δικαιώματα</a></li>
+                            {% endif %}
                             {% if current_user.can_view_logs() %}
                             <li><a class="dropdown-item" href="{{ url_for('view_logs') }}"><i class="fas fa-clock-rotate-left"></i>Αρχείο δραστηριοτήτων</a></li>
                             {% endif %}
@@ -115,7 +123,7 @@
         <span>ΣΔΜ / ΕΣΩΤΕΡΙΚΟ ΔΙΚΤΥΟ</span>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_scripts %}{% endblock %}
 </body>

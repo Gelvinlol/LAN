@@ -1,0 +1,8 @@
+# Runtime-only dependencies for an isolated Windows LAN installation.
+# Install strictly from offline_packages with install_offline.ps1.
+Flask==3.1.1
+Flask-Login==0.6.3
+Flask-Migrate==4.1.0
+Flask-SQLAlchemy==3.1.1
+python-dotenv==1.2.3
+waitress==3.0.2

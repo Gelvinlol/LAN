@@ -74,6 +74,15 @@ def add_security_headers(response):
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
     response.headers.setdefault("Referrer-Policy", "same-origin")
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; font-src 'self'; connect-src 'self'; "
+        "object-src 'none'; base-uri 'self'; frame-ancestors 'self'; "
+        "form-action 'self'",
+    )
     return response
 
 
@@ -122,11 +131,11 @@ def seed_demo(soldiers):
     from models import DutyType, Soldier
 
     duties = [
-        {"name": "Περίπολος", "description": "Patrol duty", "team_size": 2, "shifts_per_day": 3},
-        {"name": "Κεντρική Πύλη", "description": "Main Gate duty", "team_size": 2, "shifts_per_day": 3},
+        {"name": "Περίπολος", "description": "Patrol duty", "team_size": 1, "shifts_per_day": 3},
+        {"name": "Κεντρική Πύλη", "description": "Main Gate duty", "team_size": 1, "shifts_per_day": 3},
         {"name": "Θαλαμοφύλακας", "description": "Dorm Watch duty", "team_size": 1, "shifts_per_day": 3},
-        {"name": "Μαγειρεία", "description": "Cookhouse duty", "team_size": 3, "shifts_per_day": 1},
-        {"name": "Λάντζα", "description": "Dishwashing duty", "team_size": 2, "shifts_per_day": 1},
+        {"name": "Μαγειρεία", "description": "Cookhouse duty", "team_size": 1, "shifts_per_day": 3},
+        {"name": "Λάντζα", "description": "Dishwashing duty", "team_size": 1, "shifts_per_day": 3},
     ]
     for duty in duties:
         if not DutyType.query.filter_by(name=duty["name"]).first():

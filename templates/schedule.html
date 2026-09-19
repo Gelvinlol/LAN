@@ -25,7 +25,7 @@
                        value="{{ schedule_date.strftime('%Y-%m-%d') }}" 
                        onchange="changeScheduleDate(this.value)">
             </div>
-            <div class="col-md-8 text-end">
+            {% if current_user.has_permission('schedule.manage') %}<div class="col-md-8 text-end">
                 <div class="btn-group" role="group">
                     <button type="button" class="btn btn-success" onclick="generateSchedule()">
                         <i class="fas fa-magic me-1"></i>Αυτόματη Δημιουργία
@@ -39,7 +39,7 @@
                         <i class="fas fa-eraser me-1"></i>Καθαρισμός
                     </button>
                 </div>
-            </div>
+            </div>{% endif %}
         </div>
     </div>
 </div>
@@ -86,10 +86,9 @@
                     <thead>
                         <tr>
                             <th>Υπηρεσία</th>
-                            <th>ΝΟΥΜΕΡΟ</th>
+                            <th>Νούμερο & ωράρια</th>
                             <th>Στρατιώτης {% if schedule_obj and not schedule_obj.is_finalized %}<small class="text-muted">(Επεξεργάσιμο)</small>{% endif %}</th>
                             <th>Στρατιωτικός Αρ.</th>
-                            <th>Θέση</th>
                             <th>Σημειώσεις</th>
                         </tr>
                     </thead>
@@ -98,15 +97,22 @@
                         <tr>
                             <td>
                                 <strong>{{ duty_type.name }}</strong>
+                                {% if duty_type.requires_weapon %}<br><span class="badge bg-danger"><i class="fas fa-gun me-1"></i>Απαιτεί όπλο</span>{% endif %}
                                 {% if duty_type.description %}
                                     <br><small class="text-muted">{{ duty_type.description }}</small>
                                 {% endif %}
                             </td>
                             <td>
-                                <span class="badge bg-info">Βάρδια {{ assignment.shift_number }}</span>
+                                <span class="badge bg-info">Νο {{ assignment.service_number }}</span>
+                                <span class="badge bg-secondary">Άτομο {{ assignment.position_in_team }}/{{ duty_type.get_staff_count(assignment.service_number) }}</span>
+                                <div class="small text-muted mt-1">
+                                    {% for start_at, end_at in assignment.get_shift_occurrences() %}
+                                        {{ start_at.strftime('%H:%M') }}–{{ end_at.strftime('%H:%M') }}{% if start_at.date() != assignment.duty_date %} <span title="Επόμενη ημερολογιακή ημέρα">(+1)</span>{% endif %}{% if not loop.last %}<br>{% endif %}
+                                    {% endfor %}
+                                </div>
                             </td>
                             <td>
-                                {% if schedule_obj and not schedule_obj.is_finalized %}
+                                {% if schedule_obj and not schedule_obj.is_finalized and current_user.has_permission('schedule.manage') %}
                                 <!-- Editable dropdown for draft schedules -->
                                 <form method="POST" action="{{ url_for('edit_assignment', assignment_id=assignment.id) }}" class="d-inline assignment-form">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
@@ -117,9 +123,10 @@
                                         {% for available_soldier in available_soldiers %}
                                         <option value="{{ available_soldier.id }}" 
                                                 {% if available_soldier.id == soldier.id %}selected{% endif %}
-                                                {% if available_soldier.exemption_no_duty or (available_soldier.id in assigned_soldier_ids and available_soldier.id != soldier.id) %}disabled{% endif %}>
+                                                {% if not available_soldier.is_available_for_duty() or (duty_type.requires_weapon and not available_soldier.is_available_for_armed_duty()) or (available_soldier.id in assigned_soldier_ids and available_soldier.id != soldier.id) %}disabled{% endif %}>
                                             {{ available_soldier.name }}
                                             {% if available_soldier.exemption_no_duty %} (Άνευ υπηρεσίας)
+                                            {% elif duty_type.requires_weapon and not available_soldier.is_available_for_armed_duty() %} (Ακατάλληλος για ένοπλη υπηρεσία)
                                             {% elif available_soldier.id in assigned_soldier_ids and available_soldier.id != soldier.id %} (Ήδη στο πρόγραμμα)
                                             {% else %}
                                                 {% set last_duty_date = available_soldier.get_last_duty_date() %}
@@ -141,9 +148,11 @@
                                     <span class="badge bg-danger ms-1">Άνευ υπηρεσίας</span>
                                 {% endif %}
                                 {% endif %}
+                                {% if current_user.has_permission('schedule.manage') %}
+                                <div class="mt-2"><a class="btn btn-sm btn-outline-danger" href="{{ url_for('replacement_candidates', assignment_id=assignment.id) }}"><i class="fas fa-user-shield me-1"></i>Εύρεση αντικαταστάτη</a></div>
+                                {% endif %}
                             </td>
                             <td>{{ soldier.military_id }}</td>
-                            <td>{{ assignment.position_in_team }}</td>
                             <td>
                                 {% if assignment.notes %}
                                     <small class="text-muted">{{ assignment.notes }}</small>
@@ -190,12 +199,14 @@
                 </ul>
             </div>
             <div class="col-md-6">
-                <h6>Χρονικές Περίοδοι Βαρδιών:</h6>
+                <h6>Ομάδες Ωραρίων ανά Νούμερο:</h6>
                 <ul>
-                    <li><strong>Βάρδια 1:</strong> 15:00-18:00, 00:00-02:00, 06:00-09:00</li>
-                    <li><strong>Βάρδια 2:</strong> 18:00-21:00, 02:00-04:00, 09:00-12:00</li>
-                    <li><strong>Βάρδια 3:</strong> 21:00-00:00, 04:00-06:00, 12:00-15:00</li>
+                    <li><strong>Νο 1:</strong> 15:00–18:00, 00:00–02:00, 06:00–09:00</li>
+                    <li><strong>Νο 2:</strong> 18:00–21:00, 02:00–04:00, 09:00–12:00</li>
+                    <li><strong>Νο 3:</strong> 21:00–00:00, 04:00–06:00, 12:00–15:00</li>
                 </ul>
+                <p class="small text-muted mb-0">Κάθε άτομο εκτελεί όλα τα ωράρια που έχουν οριστεί για το νούμερό του.</p>
+                <p class="small text-muted mt-1 mb-0">Η ημερομηνία υπηρεσίας αφορά το επιχειρησιακό 24ωρο 15:00 της επιλεγμένης ημέρας έως 15:00 της επόμενης.</p>
             </div>
         </div>
     </div>

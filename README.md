@@ -57,6 +57,17 @@ uv run python main.py
 
 Never enable debug mode on a shared network.
 
+## Fully offline LAN deployment
+
+The repository includes local frontend assets, a Windows Python 3.11 installer,
+and an offline wheel bundle. No Internet connection is required on the target
+network. Follow [OFFLINE_LAN.md](OFFLINE_LAN.md) and run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install_offline.ps1
+powershell -ExecutionPolicy Bypass -File .\start_offline.ps1
+```
+
 ## Database maintenance
 
 Apply schema migrations after pulling application updates:

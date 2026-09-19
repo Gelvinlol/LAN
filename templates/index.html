@@ -9,9 +9,12 @@
         <h1>Καλημέρα, {{ current_user.full_name }}.</h1>
         <p>Συνοπτική εικόνα προσωπικού και επιχειρησιακής λειτουργίας της μονάδας.</p>
     </div>
-    <div class="hero-meta">
-        <div class="readiness-chip"><i></i><span>Κατάσταση συστήματος</span><strong>Επιχειρησιακό</strong></div>
-        <div class="date-block"><small>ΣΗΜΕΡΑ</small><strong>{{ today.strftime('%d.%m.%Y') }}</strong></div>
+    <div class="hero-identity">
+        <img class="dashboard-emblem" src="{{ url_for('static', filename='images/chronou-feidou-emblem.png') }}" alt="Έμβλημα Χρόνου Φείδου">
+        <div class="hero-meta">
+            <div class="readiness-chip"><i></i><span>Κατάσταση συστήματος</span><strong>Επιχειρησιακό</strong></div>
+            <div class="date-block"><small>ΣΗΜΕΡΑ</small><strong>{{ today.strftime('%d.%m.%Y') }}</strong></div>
+        </div>
     </div>
 </section>
 
@@ -61,15 +64,14 @@
             {% if today_duties %}
                 <div class="table-responsive">
                     <table class="table table-hover duty-table mb-0">
-                        <thead><tr><th>Υπηρεσία</th><th>Βάρδια</th><th>Στρατιώτης</th><th>Στρ. αριθμός</th><th>Θέση</th></tr></thead>
+                        <thead><tr><th>Υπηρεσία</th><th>Νούμερο / Ωράρια</th><th>Στρατιώτης</th><th>Στρ. αριθμός</th></tr></thead>
                         <tbody>
                             {% for assignment, soldier, duty_type in today_duties %}
                             <tr>
                                 <td><strong>{{ duty_type.name }}</strong>{% if duty_type.description %}<small>{{ duty_type.description }}</small>{% endif %}</td>
-                                <td><span class="shift-badge">0{{ assignment.shift_number }}</span></td>
+                                <td><span class="shift-badge">Νο {{ assignment.service_number }} · {{ assignment.position_in_team }}/{{ duty_type.get_staff_count(assignment.service_number) }}</span><small>{% for start_at, end_at in assignment.get_shift_occurrences() %}{{ start_at.strftime('%H:%M') }}–{{ end_at.strftime('%H:%M') }}{% if start_at.date() != assignment.duty_date %} (+1){% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</small></td>
                                 <td>{{ soldier.name }}</td>
                                 <td><span class="military-id">{{ soldier.military_id }}</span></td>
-                                <td>{{ assignment.position_in_team }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>

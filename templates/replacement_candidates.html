@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Εύρεση Αντικαταστάτη | Πρόγραμμα{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <div class="text-uppercase text-muted small fw-bold mb-1">Έκτακτο Κώλυμα</div>
+        <h1 class="mb-1"><i class="fas fa-user-shield me-2"></i>Εύρεση Αντικαταστάτη</h1>
+        <p class="text-muted mb-0">{{ assignment.duty_type.name }} · Νο {{ assignment.service_number }} · {{ assignment.duty_date.strftime('%d/%m/%Y') }}</p>
+    </div>
+    <a href="{{ url_for('schedule', date=assignment.duty_date.isoformat()) }}" class="btn btn-secondary"><i class="fas fa-arrow-left me-1"></i>Πίσω στο πρόγραμμα</a>
+</div>
+
+<div class="alert alert-warning">
+    <strong>Τρέχων στρατιώτης:</strong> {{ assignment.soldier.name }}
+    {% if assignment.duty_type.requires_weapon %}<span class="badge bg-danger ms-2"><i class="fas fa-gun me-1"></i>Ένοπλη υπηρεσία</span>{% endif %}
+    <div class="small mt-1">Οι προτάσεις αποκλείουν αυτόματα άδεια, ιατρείο, άλλη υπηρεσία την ίδια ημέρα και ακατάλληλη ιατρική κατηγορία.</div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h5 class="mb-0"><i class="fas fa-ranking-star me-2"></i>Προτεινόμενοι διαθέσιμοι στρατιώτες</h5></div>
+    <div class="card-body">
+        {% if candidate_rows %}
+        <form method="POST" action="{{ url_for('replace_assignment_emergency', assignment_id=assignment.id) }}">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead><tr><th></th><th>Στρατιώτης</th><th>Ιατρική κατηγορία</th><th>Σύνολο υπηρεσιών</th><th>Σ/Κ & αργίες</th><th>Τελευταία υπηρεσία</th></tr></thead>
+                    <tbody>
+                        {% for row in candidate_rows %}
+                        <tr>
+                            <td><input class="form-check-input" type="radio" name="soldier_id" value="{{ row.soldier.id }}" {% if loop.first %}checked{% endif %} required></td>
+                            <td><strong>{{ row.soldier.name }}</strong><div class="small text-muted">{{ row.soldier.military_id }}</div></td>
+                            <td>{{ row.soldier.medical_category or 'Δεν έχει οριστεί' }}</td>
+                            <td>{{ row.total_duties }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ row.special_duties }}</span></td>
+                            <td>{{ row.last_duty.strftime('%d/%m/%Y') if row.last_duty else 'Καμία' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-3">
+                <label for="reason" class="form-label fw-bold">Αιτία αντικατάστασης *</label>
+                <input class="form-control" id="reason" name="reason" maxlength="300" placeholder="π.χ. Ασθένεια, έκτακτη άδεια" required>
+            </div>
+            <div class="d-flex justify-content-end mt-4">
+                <button class="btn btn-danger" type="submit" onclick="return confirm('Να πραγματοποιηθεί η έκτακτη αντικατάσταση;');"><i class="fas fa-rotate me-1"></i>Ολοκλήρωση Αντικατάστασης</button>
+            </div>
+        </form>
+        {% else %}
+        <div class="text-center py-5"><i class="fas fa-user-xmark fa-3x text-muted mb-3"></i><h5>Δεν βρέθηκε κατάλληλος αντικαταστάτης</h5><p class="text-muted mb-0">Ελέγξτε άδειες, περιστατικά ιατρείου, ιατρικές κατηγορίες και το υπάρχον πρόγραμμα.</p></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

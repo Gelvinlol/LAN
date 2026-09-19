@@ -3,6 +3,8 @@ __pycache__/
 .env
 .pytest_cache/
 .venv/
+.offline-venv/
+offline_runtime/python311/
 backups/
 instance/*.db
 instance/*.sqlite*
