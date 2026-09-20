@@ -51,11 +51,12 @@
                         <a class="nav-link {{ 'active' if request.endpoint in ['medical_cases', 'add_medical_case'] }}" href="{{ url_for('medical_cases') }}"><i class="fas fa-briefcase-medical"></i><span>Ιατρείο</span></a>
                     </li>{% endif %}
                     {% if current_user.has_permission('prints.view') or current_user.has_permission('alerts.view') %}<li class="nav-item dropdown nav-more">
-                        <a class="nav-link dropdown-toggle {{ 'active' if request.endpoint in ['duty_sheet', 'prints', 'print_roster', 'print_custom', 'fairness_report', 'staffing_alerts'] }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="fas fa-ellipsis"></i><span>Περισσότερα</span></a>
+                        <a class="nav-link dropdown-toggle {{ 'active' if request.endpoint in ['duty_sheet', 'prints', 'print_roster', 'print_custom', 'fairness_report', 'special_skills_report', 'staffing_alerts'] }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="fas fa-ellipsis"></i><span>Περισσότερα</span></a>
                         <ul class="dropdown-menu nav-tools-menu">
                             {% if current_user.has_permission('prints.view') %}<li><a class="dropdown-item" href="{{ url_for('duty_sheet') }}"><i class="fas fa-file-lines"></i>Φύλλο Υπηρεσίας</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('prints') }}"><i class="fas fa-print"></i>Εκτυπώσεις</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('fairness_report') }}"><i class="fas fa-chart-column"></i>Αναφορά Δικαιοσύνης</a></li>{% endif %}
+                            {% if current_user.has_permission('prints.view') %}<li><a class="dropdown-item" href="{{ url_for('special_skills_report') }}"><i class="fas fa-screwdriver-wrench"></i>Ειδικές Γνώσεις</a></li>{% endif %}
                             {% if current_user.has_permission('alerts.view') %}<li><a class="dropdown-item" href="{{ url_for('staffing_alerts') }}"><i class="fas fa-triangle-exclamation"></i>Ειδοποιήσεις</a></li>{% endif %}
                         </ul>
                     </li>{% endif %}

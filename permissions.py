@@ -69,6 +69,7 @@ ENDPOINT_PERMISSIONS = {
     "print_roster": "prints.view",
     "print_custom": "prints.view",
     "fairness_report": "prints.view",
+    "special_skills_report": "prints.view",
     "equipment": "equipment.view",
     "add_equipment": "equipment.manage",
     "assign_equipment": "equipment.manage",

@@ -10,6 +10,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from urllib.parse import urljoin, urlparse
 import logging
+import re
 import unicodedata
 
 
@@ -21,6 +22,15 @@ def normalize_search_text(value):
         if unicodedata.category(character) != 'Mn'
     )
     return without_diacritics.casefold().strip()
+
+
+def split_special_skills(value):
+    """Split the free-text skills field into useful report filter values."""
+    return [
+        skill.strip()
+        for skill in re.split(r'[,;|\n\r]+', value or '')
+        if skill.strip()
+    ]
 
 
 @app.context_processor
@@ -1178,6 +1188,38 @@ def fairness_report():
     return render_template(
         'fairness_report.html', report=report,
         start_date=start_date, end_date=end_date,
+    )
+
+
+@app.route('/reports/special-skills')
+@login_required
+def special_skills_report():
+    selected_skill = request.args.get('skill', '').strip()
+    selected_normalized = normalize_search_text(selected_skill)
+    soldiers_list = Soldier.query.order_by(Soldier.name).all()
+
+    skill_labels = {}
+    report_rows = []
+    for soldier in soldiers_list:
+        skills = split_special_skills(soldier.special_skills)
+        for skill in skills:
+            skill_labels.setdefault(normalize_search_text(skill), skill)
+        if selected_normalized and not any(
+            normalize_search_text(skill) == selected_normalized
+            for skill in skills
+        ):
+            continue
+        report_rows.append({'soldier': soldier, 'skills': skills})
+
+    skill_options = sorted(
+        skill_labels.values(), key=normalize_search_text
+    )
+    selected_label = skill_labels.get(selected_normalized, selected_skill)
+    return render_template(
+        'special_skills_report.html',
+        report_rows=report_rows,
+        skill_options=skill_options,
+        selected_skill=selected_label,
     )
 
 @app.route('/prints/roster')

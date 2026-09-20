@@ -145,6 +145,37 @@ def test_soldier_search_ignores_case_and_greek_diacritics(client):
     assert "currentResults.replaceWith(newResults)" in page
 
 
+def test_special_skills_report_filters_case_and_diacritics(client):
+    with app.app_context():
+        db.session.add_all([
+            Soldier(
+                name="Τεχνίτης Άλφα", military_id="SKILL001",
+                enlistment_date=date(2026, 1, 1), status="Active",
+                special_skills="Υδραυλικός, Η/Υ",
+            ),
+            Soldier(
+                name="Τεχνίτης Βήτα", military_id="SKILL002",
+                enlistment_date=date(2026, 1, 1), status="Active",
+                special_skills="Ηλεκτρολόγος",
+            ),
+        ])
+        db.session.commit()
+
+    client.post(
+        "/login", data={"username": "tester", "password": "test-password"}
+    )
+    all_page = client.get("/reports/special-skills").get_data(as_text=True)
+    assert "Υδραυλικός" in all_page
+    assert "Η/Υ" in all_page
+    assert "Ηλεκτρολόγος" in all_page
+
+    filtered = client.get(
+        "/reports/special-skills?skill=υδραυλικος"
+    ).get_data(as_text=True)
+    assert "Τεχνίτης Άλφα" in filtered
+    assert "Τεχνίτης Βήτα" not in filtered
+
+
 def test_scheduler_prioritizes_never_assigned_and_respects_availability(client):
     schedule_date = date(2026, 9, 20)
     with app.app_context():

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Αναφορά Ειδικών Γνώσεων{% endblock %}
+
+{% block extra_head %}
+<style>
+@media print {
+    @page { size: A4; margin: 12mm; }
+    .skills-controls, .no-print { display: none !important; }
+    .skills-report-card { border: 0 !important; box-shadow: none !important; }
+    .skills-report-card .card-body { padding: 0 !important; }
+    .skills-report-card thead { display: table-header-group; }
+    .skills-report-card tr { break-inside: avoid; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <div class="text-uppercase text-muted small fw-bold mb-1">Αναφορές Προσωπικού</div>
+        <h1 class="mb-1"><i class="fas fa-screwdriver-wrench me-2"></i>Ειδικές Γνώσεις</h1>
+        <p class="text-muted mb-0">Καταγεγραμμένες τεχνικές γνώσεις και δεξιότητες προσωπικού.</p>
+    </div>
+    <div class="d-flex gap-2 no-print">
+        <a href="{{ url_for('prints') }}" class="btn btn-secondary"><i class="fas fa-arrow-left me-1"></i>Πίσω</a>
+        <button type="button" class="btn btn-primary" onclick="window.print()"><i class="fas fa-print me-1"></i>Εκτύπωση</button>
+    </div>
+</div>
+
+<div class="card mb-4 skills-controls">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-end" id="skills-filter-form">
+            <div class="col-md-7">
+                <label for="skill" class="form-label">Επιλογή ειδικής γνώσης</label>
+                <select class="form-select" id="skill" name="skill">
+                    <option value="">Όλες οι ειδικές γνώσεις</option>
+                    {% for skill in skill_options %}
+                    <option value="{{ skill }}" {{ 'selected' if skill|lower == selected_skill|lower }}>{{ skill }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">Οι επιλογές δημιουργούνται αυτόματα από όσα έχουν καταχωριστεί στα προφίλ.</div>
+            </div>
+            <div class="col-md-5 d-flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-filter me-1"></i>Εφαρμογή</button>
+                {% if selected_skill %}<a href="{{ url_for('special_skills_report') }}" class="btn btn-outline-secondary"><i class="fas fa-xmark me-1"></i>Καθαρισμός</a>{% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <strong>{{ selected_skill if selected_skill else 'Όλες οι καταχωρίσεις' }}</strong>
+        <span class="text-muted ms-2">{{ report_rows|length }} στρατιώτες</span>
+    </div>
+</div>
+
+<div class="card skills-report-card">
+    <div class="card-body">
+        {% if report_rows %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead><tr><th>Α/Α</th><th>Στρατιώτης</th><th>Στρατιωτικός Αριθμός</th><th>Κατάσταση</th><th>Ειδικές Γνώσεις</th></tr></thead>
+                <tbody>
+                {% for row in report_rows %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td><strong>{{ row.soldier.name }}</strong><div class="small text-muted">{{ row.soldier.specialty or 'Χωρίς ειδικότητα' }}</div></td>
+                        <td>{{ row.soldier.military_id }}</td>
+                        <td><span class="badge {{ 'bg-success' if row.soldier.status == 'Active' else 'bg-secondary' }}">{{ 'Ενεργός' if row.soldier.status == 'Active' else 'Εκτός Υπηρεσίας' }}</span></td>
+                        <td>
+                            {% if row.skills %}
+                                {% for skill in row.skills %}<span class="badge bg-light text-dark border me-1 mb-1">{{ skill }}</span>{% endfor %}
+                            {% else %}<span class="text-muted">Δεν έχουν καταχωριστεί</span>{% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state text-center py-5">
+            <i class="fas fa-user-gear fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Δεν βρέθηκαν στρατιώτες με αυτή τη γνώση</h5>
+            <a href="{{ url_for('special_skills_report') }}" class="btn btn-outline-secondary mt-2">Προβολή όλων</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('skill').addEventListener('change', () => {
+    document.getElementById('skills-filter-form').requestSubmit();
+});
+</script>
+{% endblock %}
